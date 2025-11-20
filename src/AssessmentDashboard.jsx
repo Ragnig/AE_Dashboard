@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, Calendar, CheckCircle, Clock, FileText, X, Search, ExternalLink, ArrowLeft } from 'lucide-react';
-import './dashboard.css';
+import './Dashboard.css';
 import FAREQuestionnaire from './FAREQuestionnaire';
 import CANSForm from './CANSForm';
 import ResidentialForm from './Residentialform';
