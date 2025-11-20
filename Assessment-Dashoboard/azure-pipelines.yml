@@ -2,6 +2,7 @@ trigger:
   branches:
     include:
       - develop
+      - PCPT-1114
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -9,7 +10,7 @@ pool:
 variables:
   nodeVersion: '18.x'
   buildFolder: 'dist'
-  
+
 steps:
   - task: NodeTool@0
     displayName: 'Use Node.js $(nodeVersion)'
