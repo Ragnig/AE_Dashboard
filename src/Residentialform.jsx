@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "./ResidentialForm.css";
+import "./Residentialform.css";
 
 const performanceStandards = [
   {
