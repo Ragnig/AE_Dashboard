@@ -1,3 +1,10 @@
+# Instructions to run locally in citrix
+developer powershell to run from root folder (../Assessment Engine)
+
+npm install (this is will install the dependencies, one time per folder)
+npm run build (this will build the app)
+npm run dev (this will launch the app in local server)
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
