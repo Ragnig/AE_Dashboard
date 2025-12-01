@@ -25,7 +25,7 @@ const requiredOverviewFields = ["caseId", "caseName", "personId", "memberName", 
 const badgesPerPage = 15;
 
 /* -------------------- COMPONENT -------------------- */
-export default function BasicInfoForm({ overview = demoOverview, sections = demoSections, onClose, onSave, draftData }) {
+export default function CANSForm({ overview = demoOverview, sections = demoSections, onClose, onSave, draftData }) {
   console.log('🚀 BasicInfoForm component loaded');
   console.log('🚀 onSave prop:', typeof onSave, onSave);
   
