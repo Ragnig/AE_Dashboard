@@ -806,7 +806,6 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
   const isAutoSavingRef = useRef(false);
   const [showSaveConfirmModal, setShowSaveConfirmModal] = useState(false);
   const [hasAnsweredQuestion, setHasAnsweredQuestion] = useState(false);
-  const [hasAnsweredQuestion, setHasAnsweredQuestion] = useState(false);
 
   useEffect(() => {
     // Add beforeunload event listener for conditional save/discard
@@ -854,28 +853,9 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-      if (!hasAnsweredQuestion) {
-        // User hasn't answered any questions, discard the form
-        console.log('🗑️ FARE: Discarding form - no questions answered');
-        const assessments = JSON.parse(localStorage.getItem('assessments') || '[]');
-        const filteredAssessments = assessments.filter(a => a.id !== assessmentId);
-        localStorage.setItem('assessments', JSON.stringify(filteredAssessments));
-        return;
-      }
-      
-      // User has answered questions, auto-save
-      if (hasAnsweredQuestion && !isCompleted) {
-        console.log('💾 FARE: Auto-saving before unload');
-        handleAutoSave();
-      }
-    };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-    
+  }, [hasAnsweredQuestion, formData, isCompleted, caseId, childName, dob, caregiverName, caseWorkerName, dateCompleted, assessmentId]);
+
+  useEffect(() => {
     if (draftData) {
       console.log('🔵 FARE: Loading draft data:', draftData);
       
@@ -2283,7 +2263,7 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
               if (unsavedChanges && !isCompleted) {
                 setShowUnsavedWarning(true);
               } else {
-                window.location.reload();
+                window.location.href = '/Assessment-Dash-Board/';
               }
             }}
           >
@@ -2333,7 +2313,7 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
               </div>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <button 
+                {/* <button 
                   className="btn btn-modal-primary"
                   onClick={handleSaveAndContinue}
                   disabled={isSaving}
@@ -2351,8 +2331,9 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
                       </svg>
                       Save and Continue Editing
                     </>
-                  )}
-                </button>
+                  )
+                  }
+                </button> */}
                 
                 <button 
                   className="btn btn-modal-secondary"
@@ -2363,7 +2344,7 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M6 14L2 14L2 2L6 2M11 11L14 8M14 8L11 5M14 8L6 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                  Save and Go to Dashboard
+                  Save as Draft and Close Form
                 </button>
                 
                 <button className="btn btn-modal-secondary" onClick={() => setShowSaveConfirmModal(false)} disabled={isSaving} style={{ width: '100%' }}>
@@ -2442,7 +2423,7 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
           className="btn btn-modal-secondary" 
           onClick={() => {
             setShowUnsavedWarning(false);
-            window.location.reload();
+            window.location.href = '/Assessment-Dash-Board/';
           }}
         >
           Discard Changes

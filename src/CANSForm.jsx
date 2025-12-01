@@ -85,11 +85,6 @@ export default function BasicInfoForm({ overview = demoOverview, sections = demo
 
   const [badgePageIndex, setBubblePageIndex] = useState(0);
 
-  // Generate assessment ID for tracking
-  const assessmentId = useMemo(() => {
-    return 'cans_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-  }, []);
-
   useEffect(() => {
     // Add beforeunload event listener for conditional save/discard
     const handleBeforeUnload = (event) => {
