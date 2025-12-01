@@ -1154,451 +1154,451 @@ export const demoSections = [
     },
 
 
-    // {
-    //   id: 11,
-    //   title: "Knowledge of Parenting and Child Development",
-    //   rows: [
-    //     { id: 100, 
-    //       title: "Knowledge of Child's Needs", 
-    //       help: [
-    //         "This level indicates that parent/caregiver is fully knowledgeable about the child's psychological strengths and needs, talents and limitations.",
-    //         "This level indicates that the parent/caregiver, while being generally knowledgeable about the child, has some mild deficits in knowledge or understanding of either the child's psychological condition or his/her talents, skills and assets.",
-    //         "This level indicates that the parent/caregiver does not know or understand the child well and that significant deficits exist in the caregiver's ability to relate to the child's problems and strengths.",
-    //         "This level indicates that the parent/caregiver has little or no understanding of the child's current condition. The placement is unable to cope with the child given his/her status at the time, not because of the needs of the child but because the caregiver does not understand or accept the situation.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ]
-    //      },
-    //     { id: 101, 
-    //       title: "Nutrition Management", 
-    //       help: [
-    //         "Parent/caregiver is able to plan and produce a healthy diet for children.",
-    //         "Parent/caregiver is able to plan a healthy diet but may struggle with Providing it consistently.",
-    //         "Parent/caregiver is unable to provide a consistently healthy diet for children Parent/caregiver is not knowledgeable about nutritional needs of children.",
-    //         "Parent/caregiver is not able or not willing to provide healthful nutrition management for children.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ]
-    //     },
-    //     { id: 102, 
-    //       title: "Discipline", 
-    //       help: [
-    //         "Parent/caregiver generally demonstrates an ability to discipline her/his children in a consistent and respectful manner. Parent/caregiver's expectations are age-appropriate and he/she usually is able to set age appropriate limits and to enforce them.",
-    //         "Parent/caregiver is often able to set age appropriate limits and to enforce them. On occasion her/his interventions may be too harsh, too lenient, or inconsistent. At times, her/his expectations of her/his children may be too high or too low. ",
-    //         "Parent/caregiver demonstrates limited ability to discipline his/her children in a consistent and age-appropriate manner. She/he rarely is able to set age appropriate limits and to enforce them. Her/his interventions may be erratic and overly harsh but not physically harmful. Her/his expectations of her/his children are frequently unrealistic.",
-    //         "Significant difficulties with discipline methods. Parent/caregiver disciplines her/his children in an unpredictable fashion. There is either an absence of limit setting and disciplinary interventions or the limit setting and disciplinary interventions are rigid, extreme, and physically harmful (such as shaking the child, whipping, etc.).",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ] 
-    //     },
-    //     { id: 103, 
-    //       title: "Learning Environment", 
-    //       help: [
-    //         "Parent/caregiver is able to provide a positive, developmentally appropriate learning environment for children. ",
-    //         "Parent/caregiver is able to provide an environment that generally supports learning, although parent/caregiver may be somewhat uninvolved in that learning.",
-    //         "Parent/caregiver does not actively or consistently support a learning environment for children.",
-    //         "Parent/caregiver actively works to prevent the creation of a learning environment for children.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ] 
-    //     },
-    //     { id: 104, 
-    //       title: "Demonstrates Effective Parenting Approaches", 
-    //       help: [
-    //         "Parent/caregiver(s) applies flexibility in parenting role; parent has knowledge of multiple parenting practices and is able to implement them effectively with his/her children in a manner that is consistent with the child's development and needs.",
-    //         "Parent/caregiver(s) has knowledge of parenting practices that are consistent with child's needs and development, but may struggle at times to effectively implement them.",
-    //         "Parent/caregiver has limited flexibility and/or knowledge of parenting Practices; parenting practices are seldom effective and/or consistent with child's development and needs.",
-    //         "Parent/caregiver(s) is extremely limited in his/her understanding of Parenting practices. May be very concrete or rigid in his/her approach to child rearing",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ] 
-    //     },
-    //   ],
-    // },
-    // {
-    //   id: 12,
-    //   title: "Identification and Use of Concrete Supports in Times of Need",
-    //   rows: [
-    //     { id: 105, title: "Involvement with Care",           
-    //       help: [
-    //         "This level indicates a caregiver(s) who is actively involved in the planning and/or implementation of services and is able to be an effective advocate on behalf of the child or adolescent",
-    //         "This level indicates a caregiver(s) who is consistently involved in the planning and/or implementation of services for the child or adolescent but is not an active advocate on behalf of the child or adolescent",
-    //         "This level indicates a caregiver(s) who is minimally involved in the care of the child or adolescent. Caregiver may visit the child when in out of home placement, but does not become involved in service planning and implementation.",
-    //         "This level indicates a caregiver(s) who is uninvolved with the care of the child or adolescent. Caregiver may want individual out of home or fails to visit the child when in residential placement.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ] 
-    //     },
-    //     { id: 106, title: "Parent/Caregiver's Knowledge of Rights and Responsibilities",
-    //       help: [
-    //         "Parent/caregiver has a strong understanding of rights and responsibilities.",
-    //         "Parent/caregiver has an understanding of rights and responsibilities but may still require some help in learning about certain aspects of these needs.",
-    //         "Parent/caregiver requires assistance in understanding rights and responsibilities.",
-    //         "Parent/caregiver requires substantial assistance in identifying and understanding rights and responsibilities.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ] 
-    //     },
-    //     { id: 107, title: "Financial Status",
-    //       help: [
-    //         "Family has financial resources necessary to meet needs or has limited resources but is effectively utilizing those to meet needs.",
-    //         "Family has financial resources necessary to meet most needs; however, some limitations exist.",
-    //         "Family has financial difficulties that limit their ability to meet significant family needs.",
-    //         "Family is experiencing financial hardship that has made them unable to meet family needs.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ] 
-    //     },
-    //     { id: 108, title: "Organization",
-    //       help: [
-    //         "Parent/caregiver is well organized and efficient in coordinating household, services, and activities.",
-    //         "Parent/caregiver has minimal difficulties with organizing or maintaining household to support needed services. For example, may be forgetful about appointments or occasionally fails to call back case manager.",
-    //         "Parent/caregiver has moderate difficulty organizing or maintaining household support needed services.",
-    //         "Parent/caregiver is unable to organize household to support needed services.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ] 
-    //     },
-    //     { id: 109, title: "Resources",
-    //       help: [
-    //         "Parent/caregiver has sufficient social and familial supports so that there are few limitations on what can be provided for the child.",
-    //         "Parent/caregiver can access the necessary resources to help address the child's major and basic needs but those resources might be stretched.",
-    //         "Parent/caregiver has limited resources (e.g., a grandmother living in the same town who is sometimes available to watch the child) that may not be sufficient to meet the needs of the child.",
-    //         "Parent/caregiver has severely limited resources or no social/family support available to assist in the care and treatment of the child.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ] 
-    //     },
-    //     { id: 110, title: "Knowledge of Social Service Options",
-    //       help: [
-    //         "Parent/caregiver has strong understanding of service needs and options.",
-    //         "Parent/caregiver has understanding of service needs and options but still require some help in learning about certain aspects of these services.",
-    //         "Parent/caregiver requires assistance in understanding service needs and options.",
-    //         "Parent/caregiver requires substantial assistance in identifying and understanding service needs and options.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ] 
-    //     },
-    //     { id: 111, title: "Residential Stability", 
-    //       help: [
-    //         "This rating indicates a family/parent in stable housing with no known risks of instability.",
-    //         "This rating indicates a family/parent who is currently in stable housing but there are significant risks of housing disruption (e.g., loss of job).",
-    //         "This rating indicates a family/parent who has moved frequently or has very unstable housing.",
-    //         "This rating indicates a family/parent who is currently homeless.",
-    //         // "Unkown",
-    //         // "Not Applicable",
+    {
+      id: 11,
+      title: "Knowledge of Parenting and Child Development",
+      rows: [
+        { id: 100, 
+          title: "Knowledge of Child's Needs", 
+          help: [
+            "This level indicates that parent/caregiver is fully knowledgeable about the child's psychological strengths and needs, talents and limitations.",
+            "This level indicates that the parent/caregiver, while being generally knowledgeable about the child, has some mild deficits in knowledge or understanding of either the child's psychological condition or his/her talents, skills and assets.",
+            "This level indicates that the parent/caregiver does not know or understand the child well and that significant deficits exist in the caregiver's ability to relate to the child's problems and strengths.",
+            "This level indicates that the parent/caregiver has little or no understanding of the child's current condition. The placement is unable to cope with the child given his/her status at the time, not because of the needs of the child but because the caregiver does not understand or accept the situation.",
+            // "Unkown",
+            // "Not Applicable",
+          ]
+         },
+        { id: 101, 
+          title: "Nutrition Management", 
+          help: [
+            "Parent/caregiver is able to plan and produce a healthy diet for children.",
+            "Parent/caregiver is able to plan a healthy diet but may struggle with Providing it consistently.",
+            "Parent/caregiver is unable to provide a consistently healthy diet for children Parent/caregiver is not knowledgeable about nutritional needs of children.",
+            "Parent/caregiver is not able or not willing to provide healthful nutrition management for children.",
+            // "Unkown",
+            // "Not Applicable",
+          ]
+        },
+        { id: 102, 
+          title: "Discipline", 
+          help: [
+            "Parent/caregiver generally demonstrates an ability to discipline her/his children in a consistent and respectful manner. Parent/caregiver's expectations are age-appropriate and he/she usually is able to set age appropriate limits and to enforce them.",
+            "Parent/caregiver is often able to set age appropriate limits and to enforce them. On occasion her/his interventions may be too harsh, too lenient, or inconsistent. At times, her/his expectations of her/his children may be too high or too low. ",
+            "Parent/caregiver demonstrates limited ability to discipline his/her children in a consistent and age-appropriate manner. She/he rarely is able to set age appropriate limits and to enforce them. Her/his interventions may be erratic and overly harsh but not physically harmful. Her/his expectations of her/his children are frequently unrealistic.",
+            "Significant difficulties with discipline methods. Parent/caregiver disciplines her/his children in an unpredictable fashion. There is either an absence of limit setting and disciplinary interventions or the limit setting and disciplinary interventions are rigid, extreme, and physically harmful (such as shaking the child, whipping, etc.).",
+            // "Unkown",
+            // "Not Applicable",
+          ] 
+        },
+        { id: 103, 
+          title: "Learning Environment", 
+          help: [
+            "Parent/caregiver is able to provide a positive, developmentally appropriate learning environment for children. ",
+            "Parent/caregiver is able to provide an environment that generally supports learning, although parent/caregiver may be somewhat uninvolved in that learning.",
+            "Parent/caregiver does not actively or consistently support a learning environment for children.",
+            "Parent/caregiver actively works to prevent the creation of a learning environment for children.",
+            // "Unkown",
+            // "Not Applicable",
+          ] 
+        },
+        { id: 104, 
+          title: "Demonstrates Effective Parenting Approaches", 
+          help: [
+            "Parent/caregiver(s) applies flexibility in parenting role; parent has knowledge of multiple parenting practices and is able to implement them effectively with his/her children in a manner that is consistent with the child's development and needs.",
+            "Parent/caregiver(s) has knowledge of parenting practices that are consistent with child's needs and development, but may struggle at times to effectively implement them.",
+            "Parent/caregiver has limited flexibility and/or knowledge of parenting Practices; parenting practices are seldom effective and/or consistent with child's development and needs.",
+            "Parent/caregiver(s) is extremely limited in his/her understanding of Parenting practices. May be very concrete or rigid in his/her approach to child rearing",
+            // "Unkown",
+            // "Not Applicable",
+          ] 
+        },
+      ],
+    },
+    {
+      id: 12,
+      title: "Identification and Use of Concrete Supports in Times of Need",
+      rows: [
+        { id: 105, title: "Involvement with Care",           
+          help: [
+            "This level indicates a caregiver(s) who is actively involved in the planning and/or implementation of services and is able to be an effective advocate on behalf of the child or adolescent",
+            "This level indicates a caregiver(s) who is consistently involved in the planning and/or implementation of services for the child or adolescent but is not an active advocate on behalf of the child or adolescent",
+            "This level indicates a caregiver(s) who is minimally involved in the care of the child or adolescent. Caregiver may visit the child when in out of home placement, but does not become involved in service planning and implementation.",
+            "This level indicates a caregiver(s) who is uninvolved with the care of the child or adolescent. Caregiver may want individual out of home or fails to visit the child when in residential placement.",
+            // "Unkown",
+            // "Not Applicable",
+          ] 
+        },
+        { id: 106, title: "Parent/Caregiver's Knowledge of Rights and Responsibilities",
+          help: [
+            "Parent/caregiver has a strong understanding of rights and responsibilities.",
+            "Parent/caregiver has an understanding of rights and responsibilities but may still require some help in learning about certain aspects of these needs.",
+            "Parent/caregiver requires assistance in understanding rights and responsibilities.",
+            "Parent/caregiver requires substantial assistance in identifying and understanding rights and responsibilities.",
+            // "Unkown",
+            // "Not Applicable",
+          ] 
+        },
+        { id: 107, title: "Financial Status",
+          help: [
+            "Family has financial resources necessary to meet needs or has limited resources but is effectively utilizing those to meet needs.",
+            "Family has financial resources necessary to meet most needs; however, some limitations exist.",
+            "Family has financial difficulties that limit their ability to meet significant family needs.",
+            "Family is experiencing financial hardship that has made them unable to meet family needs.",
+            // "Unkown",
+            // "Not Applicable",
+          ] 
+        },
+        { id: 108, title: "Organization",
+          help: [
+            "Parent/caregiver is well organized and efficient in coordinating household, services, and activities.",
+            "Parent/caregiver has minimal difficulties with organizing or maintaining household to support needed services. For example, may be forgetful about appointments or occasionally fails to call back case manager.",
+            "Parent/caregiver has moderate difficulty organizing or maintaining household support needed services.",
+            "Parent/caregiver is unable to organize household to support needed services.",
+            // "Unkown",
+            // "Not Applicable",
+          ] 
+        },
+        { id: 109, title: "Resources",
+          help: [
+            "Parent/caregiver has sufficient social and familial supports so that there are few limitations on what can be provided for the child.",
+            "Parent/caregiver can access the necessary resources to help address the child's major and basic needs but those resources might be stretched.",
+            "Parent/caregiver has limited resources (e.g., a grandmother living in the same town who is sometimes available to watch the child) that may not be sufficient to meet the needs of the child.",
+            "Parent/caregiver has severely limited resources or no social/family support available to assist in the care and treatment of the child.",
+            // "Unkown",
+            // "Not Applicable",
+          ] 
+        },
+        { id: 110, title: "Knowledge of Social Service Options",
+          help: [
+            "Parent/caregiver has strong understanding of service needs and options.",
+            "Parent/caregiver has understanding of service needs and options but still require some help in learning about certain aspects of these services.",
+            "Parent/caregiver requires assistance in understanding service needs and options.",
+            "Parent/caregiver requires substantial assistance in identifying and understanding service needs and options.",
+            // "Unkown",
+            // "Not Applicable",
+          ] 
+        },
+        { id: 111, title: "Residential Stability", 
+          help: [
+            "This rating indicates a family/parent in stable housing with no known risks of instability.",
+            "This rating indicates a family/parent who is currently in stable housing but there are significant risks of housing disruption (e.g., loss of job).",
+            "This rating indicates a family/parent who has moved frequently or has very unstable housing.",
+            "This rating indicates a family/parent who is currently homeless.",
+            // "Unkown",
+            // "Not Applicable",
 
-    //       ] 
-    //     },
-    //     { id: 112, title: "Job Functioning", 
-    //       help: [
-    //         "If able, parent/caregiver is fully employed with no problems at work. Alternatively, parent/caregiver may not be seeking employment or choose to be a full‑time homemaker.",
-    //         "Parent/caregiver is partially employed, employed significantly below her/his level of education/experience/training, or is having some work‑related problems.",
-    //         "Parent/caregiver is having significant work‑related problems or is temporarily unemployed because of such difficulties.",
-    //         "Significant difficulties with vocational functioning. Parent/caregiver is chronically unemployed or obtains financial resources through activities that are illegal and/or potentially harmful to her/himself and her/his family members (prostitution, drug dealing, for example).",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ] 
-    //     },
+          ] 
+        },
+        { id: 112, title: "Job Functioning", 
+          help: [
+            "If able, parent/caregiver is fully employed with no problems at work. Alternatively, parent/caregiver may not be seeking employment or choose to be a full‑time homemaker.",
+            "Parent/caregiver is partially employed, employed significantly below her/his level of education/experience/training, or is having some work‑related problems.",
+            "Parent/caregiver is having significant work‑related problems or is temporarily unemployed because of such difficulties.",
+            "Significant difficulties with vocational functioning. Parent/caregiver is chronically unemployed or obtains financial resources through activities that are illegal and/or potentially harmful to her/himself and her/his family members (prostitution, drug dealing, for example).",
+            // "Unkown",
+            // "Not Applicable",
+          ] 
+        },
 
-    //   ],
-    // },
-    //   {
-    //   id: 13,
-    //   title: "Positive Family, Community and Social Connections",
-    //   rows: [
-    //     { id: 113, title: "Partner Relations", 
-    //       help: [
-    //         "Parent/caregiver has a strong, positive, partner relationship with another adult. This adult functions as a member of the family. A person without a relationship who currently has no interest in one would be rated here.",
-    //         "Parent/caregiver has a generally positive partner relationship with another adult. This adult may not function as a member of the family.",
-    //         "Parent/caregiver’s current relationship causes distress that may interfere with parent/caregiver.",
-    //         "Parent/caregiver is currently involved in a negative, unhealthy relationship with another adult. This would also include a parent/caregiver involved in a relationship with domestic violence issues.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ] 
-    //     },
-    //     { id: 114, title: "Relations with Extended Family", 
-    //       help: [
-    //         "Parent/caregiver has a strong, positive, partner relationship with another adult. This adult functions as a member of the family. A person without a relationship who currently has no interest in one would be rated here.",
-    //         "Parent/caregiver has a generally positive partner relationship with another adult. This adult may not function as a member of the family.",
-    //         "Parent/caregiver’s current relationship causes distress that may interfere with parent/caregiver.",
-    //         "Parent/caregiver is currently involved in a negative, unhealthy relationship with another adult. This would also include a parent/caregiver involved in a relationship with domestic violence issues.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ] 
-    //     },
-    //     { id: 115, title: "Community Involvement", 
-    //       help: [
-    //         "The parent/caregiver is actively involved in his/her community.",
-    //         "The parent/caregiver is somewhat involved in his/her community. He/she is supportive of and involved in community institutions.",
-    //         "The parent/caregiver identifies with a community but is not involved.",
-    //         "The parent/caregiver is not involved with any community.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ] 
-    //     },
-    //     { id: 116, title: "Natural Supports", 
-    //       help: [
-    //         "Parent/caregiver(s) has substantial natural supports to assist in addressing most family and child needs.",
-    //         "Parent/caregiver(s) has natural supports but some limitations exist whereby these supports are insufficient to address some family and child needs.",
-    //         "Parent/caregiver(s) has limited natural supports.",
-    //         "Parent/caregiver(s) has no natural supports.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ] 
-    //     },
-    //   ],
-    // }, 
-    //   {
-    //   id: 14,
-    //   title: "Ability to Nurture Social and Emotional Competence of Children",
-    //   rows: [
-    //     { id: 117, title: "Parent/Caregiver's Ability to Listen as Parent",
-    //       help: [
-    //         "Parent/caregiver(s) is able to listen carefully and understand both good and bad news regarding family and child issues.",
-    //         "Parent/caregiver(s) has listening skills but sometimes struggles to hear either good or bad news regarding family and child issues.",
-    //         "Parent/caregiver(s) requires help learning to listen effectively.",
-    //         "Parent/caregiver(s) requires substantial help learning to listen effectively.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ] 
-    //     },
-    //     { id: 118, title: "Parent/Caregiver's Understanding of Impact of Own Behavior on Children", 
-    //       help: [
-    //         "Parent/caregiver(s) has clear understanding of the impact of his/her behavior on children and is able to adjust behavior to limit negative impact.",
-    //         "Parent/caregiver(s) has some understanding of impact of his/her behavior but may struggle at times to change behavior to limit negative impact.",
-    //         "Parent/caregiver(s) has limited understanding of the impact of his/her behavior on children.",
-    //         "Parent/caregiver(s) has no understanding or denies any impact of his/her behavior on children.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ] 
-    //     },
-    //     { id: 119, title: "Empathy with Children", 
-    //       help: [
-    //         "Adaptive emotional responsiveness. Parent/caregiver is emotionally empathic and attends child's emotional needs.",
-    //         "Parent/caregiver is generally emotionally empathic and typically attends to child's emotional needs.",
-    //         "Limited adaptive emotional responsiveness. Parent/caregiver is often not empathic and frequently is not able to attend to the child's emotional needs.",
-    //         "Significant difficulties with emotional responsiveness. Parent/caregiver is not empathic and rarely attends to the child's emotional needs.",
-    //         // "Unkown",
-    //         // "Not Applicable", 
-    //       ] 
-    //     },
-    //     { id: 120, title: "Ability to Communicate ", 
-    //       help: [
-    //         "Parent/caregiver(s) is able to express feeling and thoughts effectively with regard to family and child issues.",
-    //         "Parent/caregiver(s) is able to express feeling and thoughts but sometimes struggles to express these so that others can listen and/or understand.",
-    //         "Parent/caregiver(s) requires help learning to express feeling and thoughts effectively with regard to family and child issues.",
-    //         "Parent/caregiver(s) requires substantial help learning to express feelings and thoughts effectively with regard to family and child issues.",
-    //         // "Unkown",
-    //         // "Not Applicable", 
-    //       ] 
-    //     },
-    //   ],
-    // },
-    //   {
-    //   id: 15,
-    //   title: "Factors Contributing to Parent/Caregiver Resilience",
-    //   rows: [
-    //     { id: 121, title: "Physical Health", 
-    //       help:  [
-    //         "Parent/caregiver(s) has no physical health limitations that require assistance or impact childcare.",
-    //         "Parent/caregiver(s) has some physical health limitations but they do not require assistance or interfere with ability to care for child at this time.",
-    //         "Parent/caregiver(s) has significant physical health limitations that make difficult or prevent them from being able to care for the child without immediate assistance.",
-    //         "Parent/caregiver(s) is physically unable to provide care or assistance to the child as needed.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ] 
-    //     },
-    //     { id: 122, title: "Mental Health", 
-    //       help:  [
-    //         "Parent/caregiver(s) has no mental health limitations that require assistance or impact childcare.",
-    //         "Parent/caregiver(s) has some mental health limitations but they do not significantly interfere with ability to care for the child at this time.",
-    //         "Parent/caregiver(s) has significant mental health limitations that make difficult or prevent them from being able to care for the child without immediate assistance.",
-    //         "Parent/caregiver(s) is unable to provide any needed assistance or attendant to care to child due to serious mental illness.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ] 
-    //     },
-    //     { id: 123, title: "Substance Use", 
-    //       help: [
-    //         "Parent/caregiver(s) has no substance–related limitations that impact or impair parent/care giving ability and childcare.",
-    //         "Parent/caregiver(s) has some substance-related limitations that interfere or may interfere with parenting ability and childcare.",
-    //         "Parent/caregiver(s) has significant substance-related limitations that make difficult or prevent them from being able to parent and care for their child without assistance.",
-    //         "Parent/caregiver(s) is unable to provide any needed assistance or childcare due to serious substance dependency or abuse.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ] 
-    //     },
-    //     { id: 124, title: "Developmental", 
-    //       help: [
-    //         "Parent/caregiver(s) has no developmental limitations that impact childcare.",
-    //         "Parent/caregiver(s) has some developmental limitations that interfere or may interfere with his or her ability for childcare at this time.",
-    //         "Parent/caregiver(s) has significant developmental limitations that make difficult or prevent them from being able to parent and care for their child without assistance.",
-    //         "Parent/caregiver(s) is unable to provide any needed assistance or childcare due to serious developmental disabilities.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ]
-    //     },
-    //     { id: 125, title: "Parent/Caregiver Posttraumatic Reactions", 
-    //       help: [
-    //         "Parent/caregiver has adjusted to traumatic experiences without notable posttraumatic stress reacrtions.",
-    //         "Parent/caregiver has some mild adjustment problems realted to their child's or their own traumatic experiences. Parent/Caregiver may exhibit some guilt about their child's trauma or become somewhat detached or estranges from others. These symptoms may mildly impact their ability to provide childcare.",
-    //         "Parent/caregiver has moderate adjustment difficulties related to traumatic experience, and these difficulties impact ability to provide childcare. Parent/Childgiver may have noghtmares or flashbacks of the trauma.",
-    //         "Parent/caregiver has significant adjustment difficulties associated with traumatic experiences, and these difficulties severly impact the cargiver's ability to provide childcare. Symptoms might include intusive thoughts, hyper vigilance, and constant anxiety.",
-    //         // "Unkown",
-    //         // "Not Applicable",   
-    //       ]
-    //      },
-    //     { id: 126, title: "Hygiene and Self-Care",
-    //       help: [
-    //         "No evidence of hygiene or grooming problems. This is characterized by the ability to independently complete all relevant activities such as bathing, grooming, and dressing.",
-    //         "This is characterized by difficulties that impair the individual's level of functioning, but do not represent a significant short or long-term threat to the person's well-being.",
-    //         "This is characterized by extreme disruption in one's self-care skill or moderate disruption on more than one self-care skill. The person's self-care does not represent an immediate threat to the person's safety but has the potential for creating significant long-term problems if not addressed.",
-    //         "This is characterized by extreme disruptions in multiple self-care skills. The person's self-care abilities are sufficiently impaired that he/she represents an immediate threat to himself/herself and requires 24-hour supervision to ensure safety. For example, a person with an eating disorder that prevents sufficient nutritional intake would be coded here.",
-    //         // "Unkown",
-    //         // "Not Applicable", 
-    //       ]
-    //      },
-    //     { id: 127, title: " Independent Living Skills", 
-    //       help: [
-    //         "No evidence of any deficits that could impede maintaining own home.",
-    //         "Some problems exist with maintaining reasonable cleanliness, diet and so forth. Problems with money management may occur at this level. These problems are generally addressable with training or supervision.",
-    //         "Notable problems with completing tasks necessary for independent living are apparent. Difficulty with cooking, cleaning, and self-management when unsupervised would be common at this level. Problems are generally addressable with in-home services.",
-    //         "This individual is unable to live independently given their current status. Problems require a structured living environment",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ]
-    //      },
-    //     { id: 128, title: "Recreation", 
-    //       help: [
-    //         "The parent/caregiver has active legal recreational interests that he/she pursues consistently.",
-    //         "The parent/caregiver has legal recreational interests but does not pursue them consistently.",
-    //         "The parent/caregiver has limited legal recreational activities.",
-    //         "The parent/caregiver has no recreational activities. (Watching television alone is not considered a recreational activity.)",
-    //         // "Unkown",
-    //         // "Not Applicable", 
-    //       ]
-    //      },                        
-    //   ],
-    // }, 
-    // {
-    //   id:16,
-    //   title: "Commitment to Permanency Plan Goal - Caregiver",
-    //   rows: [
-    //     {
-    //       id: 129, title: "Collaboration with Other Parents/Caregivers",
-    //       help: [
-    //         "Caregiver works with the parent(s) regarding issues of the development and well being of the children. Caregiver supports continual family membership, visitation, and shared parenting. They demonstrate good communication and partnership.",
-    //         "Generally good caregiver-parental collaboration with occasional difficulties but are willing to work towards better communications and partnership regarding the development and well being of the children.",
-    //         "Limited adaptive collaboration. Caregiver has moderate problems of communication and collaboration with parent(s) and/or caregivers with regard to issues of the development and well being of the youth.",
-    //         "Significant difficulties with collaboration. Caregiver has minimal collaboration and destructive or sabotaging communication among any parents and caregivers regarding issues related to the development and well being of the youth.",
+      ],
+    },
+      {
+      id: 13,
+      title: "Positive Family, Community and Social Connections",
+      rows: [
+        { id: 113, title: "Partner Relations", 
+          help: [
+            "Parent/caregiver has a strong, positive, partner relationship with another adult. This adult functions as a member of the family. A person without a relationship who currently has no interest in one would be rated here.",
+            "Parent/caregiver has a generally positive partner relationship with another adult. This adult may not function as a member of the family.",
+            "Parent/caregiver’s current relationship causes distress that may interfere with parent/caregiver.",
+            "Parent/caregiver is currently involved in a negative, unhealthy relationship with another adult. This would also include a parent/caregiver involved in a relationship with domestic violence issues.",
+            // "Unkown",
+            // "Not Applicable",
+          ] 
+        },
+        { id: 114, title: "Relations with Extended Family", 
+          help: [
+            "Parent/caregiver has a strong, positive, partner relationship with another adult. This adult functions as a member of the family. A person without a relationship who currently has no interest in one would be rated here.",
+            "Parent/caregiver has a generally positive partner relationship with another adult. This adult may not function as a member of the family.",
+            "Parent/caregiver’s current relationship causes distress that may interfere with parent/caregiver.",
+            "Parent/caregiver is currently involved in a negative, unhealthy relationship with another adult. This would also include a parent/caregiver involved in a relationship with domestic violence issues.",
+            // "Unkown",
+            // "Not Applicable",
+          ] 
+        },
+        { id: 115, title: "Community Involvement", 
+          help: [
+            "The parent/caregiver is actively involved in his/her community.",
+            "The parent/caregiver is somewhat involved in his/her community. He/she is supportive of and involved in community institutions.",
+            "The parent/caregiver identifies with a community but is not involved.",
+            "The parent/caregiver is not involved with any community.",
+            // "Unkown",
+            // "Not Applicable",
+          ] 
+        },
+        { id: 116, title: "Natural Supports", 
+          help: [
+            "Parent/caregiver(s) has substantial natural supports to assist in addressing most family and child needs.",
+            "Parent/caregiver(s) has natural supports but some limitations exist whereby these supports are insufficient to address some family and child needs.",
+            "Parent/caregiver(s) has limited natural supports.",
+            "Parent/caregiver(s) has no natural supports.",
+            // "Unkown",
+            // "Not Applicable",
+          ] 
+        },
+      ],
+    }, 
+      {
+      id: 14,
+      title: "Ability to Nurture Social and Emotional Competence of Children",
+      rows: [
+        { id: 117, title: "Parent/Caregiver's Ability to Listen as Parent",
+          help: [
+            "Parent/caregiver(s) is able to listen carefully and understand both good and bad news regarding family and child issues.",
+            "Parent/caregiver(s) has listening skills but sometimes struggles to hear either good or bad news regarding family and child issues.",
+            "Parent/caregiver(s) requires help learning to listen effectively.",
+            "Parent/caregiver(s) requires substantial help learning to listen effectively.",
+            // "Unkown",
+            // "Not Applicable",
+          ] 
+        },
+        { id: 118, title: "Parent/Caregiver's Understanding of Impact of Own Behavior on Children", 
+          help: [
+            "Parent/caregiver(s) has clear understanding of the impact of his/her behavior on children and is able to adjust behavior to limit negative impact.",
+            "Parent/caregiver(s) has some understanding of impact of his/her behavior but may struggle at times to change behavior to limit negative impact.",
+            "Parent/caregiver(s) has limited understanding of the impact of his/her behavior on children.",
+            "Parent/caregiver(s) has no understanding or denies any impact of his/her behavior on children.",
+            // "Unkown",
+            // "Not Applicable",
+          ] 
+        },
+        { id: 119, title: "Empathy with Children", 
+          help: [
+            "Adaptive emotional responsiveness. Parent/caregiver is emotionally empathic and attends child's emotional needs.",
+            "Parent/caregiver is generally emotionally empathic and typically attends to child's emotional needs.",
+            "Limited adaptive emotional responsiveness. Parent/caregiver is often not empathic and frequently is not able to attend to the child's emotional needs.",
+            "Significant difficulties with emotional responsiveness. Parent/caregiver is not empathic and rarely attends to the child's emotional needs.",
+            // "Unkown",
+            // "Not Applicable", 
+          ] 
+        },
+        { id: 120, title: "Ability to Communicate ", 
+          help: [
+            "Parent/caregiver(s) is able to express feeling and thoughts effectively with regard to family and child issues.",
+            "Parent/caregiver(s) is able to express feeling and thoughts but sometimes struggles to express these so that others can listen and/or understand.",
+            "Parent/caregiver(s) requires help learning to express feeling and thoughts effectively with regard to family and child issues.",
+            "Parent/caregiver(s) requires substantial help learning to express feelings and thoughts effectively with regard to family and child issues.",
+            // "Unkown",
+            // "Not Applicable", 
+          ] 
+        },
+      ],
+    },
+      {
+      id: 15,
+      title: "Factors Contributing to Parent/Caregiver Resilience",
+      rows: [
+        { id: 121, title: "Physical Health", 
+          help:  [
+            "Parent/caregiver(s) has no physical health limitations that require assistance or impact childcare.",
+            "Parent/caregiver(s) has some physical health limitations but they do not require assistance or interfere with ability to care for child at this time.",
+            "Parent/caregiver(s) has significant physical health limitations that make difficult or prevent them from being able to care for the child without immediate assistance.",
+            "Parent/caregiver(s) is physically unable to provide care or assistance to the child as needed.",
+            // "Unkown",
+            // "Not Applicable",
+          ] 
+        },
+        { id: 122, title: "Mental Health", 
+          help:  [
+            "Parent/caregiver(s) has no mental health limitations that require assistance or impact childcare.",
+            "Parent/caregiver(s) has some mental health limitations but they do not significantly interfere with ability to care for the child at this time.",
+            "Parent/caregiver(s) has significant mental health limitations that make difficult or prevent them from being able to care for the child without immediate assistance.",
+            "Parent/caregiver(s) is unable to provide any needed assistance or attendant to care to child due to serious mental illness.",
+            // "Unkown",
+            // "Not Applicable",
+          ] 
+        },
+        { id: 123, title: "Substance Use", 
+          help: [
+            "Parent/caregiver(s) has no substance–related limitations that impact or impair parent/care giving ability and childcare.",
+            "Parent/caregiver(s) has some substance-related limitations that interfere or may interfere with parenting ability and childcare.",
+            "Parent/caregiver(s) has significant substance-related limitations that make difficult or prevent them from being able to parent and care for their child without assistance.",
+            "Parent/caregiver(s) is unable to provide any needed assistance or childcare due to serious substance dependency or abuse.",
+            // "Unkown",
+            // "Not Applicable",
+          ] 
+        },
+        { id: 124, title: "Developmental", 
+          help: [
+            "Parent/caregiver(s) has no developmental limitations that impact childcare.",
+            "Parent/caregiver(s) has some developmental limitations that interfere or may interfere with his or her ability for childcare at this time.",
+            "Parent/caregiver(s) has significant developmental limitations that make difficult or prevent them from being able to parent and care for their child without assistance.",
+            "Parent/caregiver(s) is unable to provide any needed assistance or childcare due to serious developmental disabilities.",
+            // "Unkown",
+            // "Not Applicable",
+          ]
+        },
+        { id: 125, title: "Parent/Caregiver Posttraumatic Reactions", 
+          help: [
+            "Parent/caregiver has adjusted to traumatic experiences without notable posttraumatic stress reacrtions.",
+            "Parent/caregiver has some mild adjustment problems realted to their child's or their own traumatic experiences. Parent/Caregiver may exhibit some guilt about their child's trauma or become somewhat detached or estranges from others. These symptoms may mildly impact their ability to provide childcare.",
+            "Parent/caregiver has moderate adjustment difficulties related to traumatic experience, and these difficulties impact ability to provide childcare. Parent/Childgiver may have noghtmares or flashbacks of the trauma.",
+            "Parent/caregiver has significant adjustment difficulties associated with traumatic experiences, and these difficulties severly impact the cargiver's ability to provide childcare. Symptoms might include intusive thoughts, hyper vigilance, and constant anxiety.",
+            // "Unkown",
+            // "Not Applicable",   
+          ]
+         },
+        { id: 126, title: "Hygiene and Self-Care",
+          help: [
+            "No evidence of hygiene or grooming problems. This is characterized by the ability to independently complete all relevant activities such as bathing, grooming, and dressing.",
+            "This is characterized by difficulties that impair the individual's level of functioning, but do not represent a significant short or long-term threat to the person's well-being.",
+            "This is characterized by extreme disruption in one's self-care skill or moderate disruption on more than one self-care skill. The person's self-care does not represent an immediate threat to the person's safety but has the potential for creating significant long-term problems if not addressed.",
+            "This is characterized by extreme disruptions in multiple self-care skills. The person's self-care abilities are sufficiently impaired that he/she represents an immediate threat to himself/herself and requires 24-hour supervision to ensure safety. For example, a person with an eating disorder that prevents sufficient nutritional intake would be coded here.",
+            // "Unkown",
+            // "Not Applicable", 
+          ]
+         },
+        { id: 127, title: " Independent Living Skills", 
+          help: [
+            "No evidence of any deficits that could impede maintaining own home.",
+            "Some problems exist with maintaining reasonable cleanliness, diet and so forth. Problems with money management may occur at this level. These problems are generally addressable with training or supervision.",
+            "Notable problems with completing tasks necessary for independent living are apparent. Difficulty with cooking, cleaning, and self-management when unsupervised would be common at this level. Problems are generally addressable with in-home services.",
+            "This individual is unable to live independently given their current status. Problems require a structured living environment",
+            // "Unkown",
+            // "Not Applicable",
+          ]
+         },
+        { id: 128, title: "Recreation", 
+          help: [
+            "The parent/caregiver has active legal recreational interests that he/she pursues consistently.",
+            "The parent/caregiver has legal recreational interests but does not pursue them consistently.",
+            "The parent/caregiver has limited legal recreational activities.",
+            "The parent/caregiver has no recreational activities. (Watching television alone is not considered a recreational activity.)",
+            // "Unkown",
+            // "Not Applicable", 
+          ]
+         },                        
+      ],
+    }, 
+    {
+      id:16,
+      title: "Commitment to Permanency Plan Goal - Caregiver",
+      rows: [
+        {
+          id: 129, title: "Collaboration with Other Parents/Caregivers",
+          help: [
+            "Caregiver works with the parent(s) regarding issues of the development and well being of the children. Caregiver supports continual family membership, visitation, and shared parenting. They demonstrate good communication and partnership.",
+            "Generally good caregiver-parental collaboration with occasional difficulties but are willing to work towards better communications and partnership regarding the development and well being of the children.",
+            "Limited adaptive collaboration. Caregiver has moderate problems of communication and collaboration with parent(s) and/or caregivers with regard to issues of the development and well being of the youth.",
+            "Significant difficulties with collaboration. Caregiver has minimal collaboration and destructive or sabotaging communication among any parents and caregivers regarding issues related to the development and well being of the youth.",
 
-    //       ],
-    //     },
-    //     {
-    //       id: 130, title: "Caregiver Support for Permanency Plan Goal",
-    //       help: [
-    //         "Caregiver is completely committed to doing whatever he/she needs to support permanency plan goals, including supporting the parent in moving towards reunification.",
-    //         "Caregiver is generally committed to doing the required tasks in order to support permanency plan goals, including reunification.",
-    //         "Caregiver is ambivalent or uncommitted to supporting permanency plan goals, including reunification, at this time.",
-    //         "Caregiver is uninterested in supporting the current permanency plan goals.",
-    //       ],
-    //     },
-    //     {
-    //       id: 131, title: "Inclusion of the Child in the Foster Family",
-    //       help: [
-    //         "All members of the family view the child as an equal member. Child is included in all family celebrations and events, and child’s accomplishments and milestones are given attention equal to that of other children in the family.",
-    //         "Most family members accept the child in a welcoming manner, celebrate the child’s accomplishments,and include the child in family events. There may be one family member who treats the child differently, but this has little impact on the child’s well-being; or the child is occasionally left out.",
-    //         "At least one parent treats the child as an unequal member of the family. The child is sometimes left out of family celebrations, trips, and events. The child’s milestones are not acknowledged in a manner equal to that of other children in the family.",
-    //         "The child’s status in the foster family is beneath that of other children in the family. The child may be left behind when the family takes trips, and the child’s milestones are ignored when those of other family members are celebrated. Some or all of the family members ignore or resent the child’s presence in the family.",
-    //       ],
-    //     },
-    //   ],
-    // },
-    //   {
-    //   id: 17,
-    //   title: "Commitment to Permanency Plan Goal - Biological Parent",
-    //   rows: [
-    //     { id: 132, title: "Parent Participation in Visitation", 
-    //       help: [
-    //         "Parent consistently adheres to all planned visitations and actively participates.",
-    //         "Parent generally adheres to planned visitations but may sometimes miss or engage in unplanned visitation or always attends but does not actively participate with the child(ren).",
-    //         "Parent sporadically adheres to planned visitation.",
-    //         "Parent does not participate in planned visitation.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ]
-    //      },
-    //     { id: 133, title: "Relationship/Contact with Caseworker", 
-    //       help: [
-    //         "Parent actively stays in contact with the caseworker and consistently responds to the caseworker’s input and requests.",
-    //         "Parent does not always stay in contact with caseworker, but is generally responsive to the worker’s requests and input. Parent is generally good about following through on appointments, returning caseworker’s phone calls, etc.",
-    //         "Parent is inconsistent in his or her response to caseworker’s requests and input.",
-    //         "Parent is unresponsive and uncooperative with the child welfare caseworker. He/she may be actively hostile or seeks to avoid the worker.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ]
-    //      },
-    //     { id: 134, title: "Involvement in Treatment", 
-    //       help: [
-    //         "Parent consistently participates in personal treatment and shows progress on targeted treatment issues as evidenced by documentation from treatment provider.",
-    //         "Parent generally participates in personal treatment, but may sometimes miss scheduled treatment visits, or parent has been attending treatment but provider’s documentation suggests minimal progress on targeted treatment issues.",
-    //         "Parent sporadically participates in personal treatment.",
-    //         "Parent refuses to participate in personal treatment.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ]
-    //      },
-    //     { id: 135, title: "Parent Involvement/Parent Participation", 
-    //       help: [
-    //         "Parent is actively involved in child’s life while in placement and may take part in shared parenting with the substitute caregiver.",
-    //         "Parent is generally involved in the child’s life while in placement, but still has periods of time where he or she has been less involved or inconsistent.",
-    //         "Parent is involved in child’s life but only has minimal interactions over an extended period of time.",
-    //         "Parent is mostly uninvolved in child’s life; he or she may not interact with the child.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ]
-    //      },
-    //      { id: 136, title: "Commitment to Reunification", 
-    //       help: [
-    //         "Parent is doing whatever he/she needs to accomplish in order to be reunified.",
-    //         "Parent is generally committed to doing the required tasks in order to achieve reunification and has once or twice in the last month failed to follow through consistently (e.g., misses visits, therapy sessions and/or court appearances, etc.)",
-    //         "Parent appears or reports being ambivalent or uncommitted to reunification at this time.",
-    //         "Parent is uninterested in achieving reunification at this time.",
-    //         // "Unkown",
-    //         // "Not Applicable",
-    //       ]
-    //      },
-    //     { id: 137, title: "Responsibility in Maltreatment", 
-    //       help: [
-    //         "Parent accepts responsibility for his/her role in prior child maltreatment and demonstrates behavior changes that reduce risk of future maltreatment.",
-    //         "Parent understands his/her role in prior child maltreatment, but there may be some concern about their ability to translate that awareness into the prevention of future maltreatment of the child.",
-    //         "Parent does not accept primary responsibility. He/she blames others.",
-    //         "Parent denies any role in prior child maltreatment. Parent may deny that maltreatment took place, or may deny any connection and any level of responsibility for the maltreatment of the child.",
-    //         // "Unkown",
-    //         // "Not Applicable", 
-    //       ]
-    //      },
-    //     { id: 138, title: "Relationship with Abuser(s)", 
-    //       help: [
-    //         "Parent has no contact/relationships with individuals who were involved in earlier maltreatment of children. Anyone who had engaged in prior child maltreatment (e.g., paramour) is now out of his/her life.",
-    //         "Parent has limited contact with individuals who were involved in earlier maltreatment of child, but he/she is aware of the importance of protecting children from this individual(s).",
-    //         "Parent remains in relationship with individuals who were involved in earlier maltreatment.",
-    //         "Parent remains in relationship with individuals who were involved in earlier maltreatment and denies any risk with these individuals; and/or parent continues to associate with individuals who could be harmful to children.",
-    //         // "Unkown",
-    //         // "Not Applicable", 
-    //       ]
-    //      },
-    //     { id: 139, title: "History of Maltreatment of Children ", 
-    //       help: [
-    //         "No evidence of any history of maltreatment.",
-    //         "Parent’s maltreatment of children is limited to the most recent findings. He/she has only the current episode of DCFS involvement.",
-    //         "Parent has two indicated incidents of DCFS involvement.",
-    //         "Parent has three or more indicated incidents of DCFS involvement or any episode ending in the termination of parental rights.",
-    //         // "Unkown",
-    //         // "Not Applicable", 
-    //     ]
-    //      },        
-    //   ],
-    // },
+          ],
+        },
+        {
+          id: 130, title: "Caregiver Support for Permanency Plan Goal",
+          help: [
+            "Caregiver is completely committed to doing whatever he/she needs to support permanency plan goals, including supporting the parent in moving towards reunification.",
+            "Caregiver is generally committed to doing the required tasks in order to support permanency plan goals, including reunification.",
+            "Caregiver is ambivalent or uncommitted to supporting permanency plan goals, including reunification, at this time.",
+            "Caregiver is uninterested in supporting the current permanency plan goals.",
+          ],
+        },
+        {
+          id: 131, title: "Inclusion of the Child in the Foster Family",
+          help: [
+            "All members of the family view the child as an equal member. Child is included in all family celebrations and events, and child’s accomplishments and milestones are given attention equal to that of other children in the family.",
+            "Most family members accept the child in a welcoming manner, celebrate the child’s accomplishments,and include the child in family events. There may be one family member who treats the child differently, but this has little impact on the child’s well-being; or the child is occasionally left out.",
+            "At least one parent treats the child as an unequal member of the family. The child is sometimes left out of family celebrations, trips, and events. The child’s milestones are not acknowledged in a manner equal to that of other children in the family.",
+            "The child’s status in the foster family is beneath that of other children in the family. The child may be left behind when the family takes trips, and the child’s milestones are ignored when those of other family members are celebrated. Some or all of the family members ignore or resent the child’s presence in the family.",
+          ],
+        },
+      ],
+    },
+      {
+      id: 17,
+      title: "Commitment to Permanency Plan Goal - Biological Parent",
+      rows: [
+        { id: 132, title: "Parent Participation in Visitation", 
+          help: [
+            "Parent consistently adheres to all planned visitations and actively participates.",
+            "Parent generally adheres to planned visitations but may sometimes miss or engage in unplanned visitation or always attends but does not actively participate with the child(ren).",
+            "Parent sporadically adheres to planned visitation.",
+            "Parent does not participate in planned visitation.",
+            // "Unkown",
+            // "Not Applicable",
+          ]
+         },
+        { id: 133, title: "Relationship/Contact with Caseworker", 
+          help: [
+            "Parent actively stays in contact with the caseworker and consistently responds to the caseworker’s input and requests.",
+            "Parent does not always stay in contact with caseworker, but is generally responsive to the worker’s requests and input. Parent is generally good about following through on appointments, returning caseworker’s phone calls, etc.",
+            "Parent is inconsistent in his or her response to caseworker’s requests and input.",
+            "Parent is unresponsive and uncooperative with the child welfare caseworker. He/she may be actively hostile or seeks to avoid the worker.",
+            // "Unkown",
+            // "Not Applicable",
+          ]
+         },
+        { id: 134, title: "Involvement in Treatment", 
+          help: [
+            "Parent consistently participates in personal treatment and shows progress on targeted treatment issues as evidenced by documentation from treatment provider.",
+            "Parent generally participates in personal treatment, but may sometimes miss scheduled treatment visits, or parent has been attending treatment but provider’s documentation suggests minimal progress on targeted treatment issues.",
+            "Parent sporadically participates in personal treatment.",
+            "Parent refuses to participate in personal treatment.",
+            // "Unkown",
+            // "Not Applicable",
+          ]
+         },
+        { id: 135, title: "Parent Involvement/Parent Participation", 
+          help: [
+            "Parent is actively involved in child’s life while in placement and may take part in shared parenting with the substitute caregiver.",
+            "Parent is generally involved in the child’s life while in placement, but still has periods of time where he or she has been less involved or inconsistent.",
+            "Parent is involved in child’s life but only has minimal interactions over an extended period of time.",
+            "Parent is mostly uninvolved in child’s life; he or she may not interact with the child.",
+            // "Unkown",
+            // "Not Applicable",
+          ]
+         },
+         { id: 136, title: "Commitment to Reunification", 
+          help: [
+            "Parent is doing whatever he/she needs to accomplish in order to be reunified.",
+            "Parent is generally committed to doing the required tasks in order to achieve reunification and has once or twice in the last month failed to follow through consistently (e.g., misses visits, therapy sessions and/or court appearances, etc.)",
+            "Parent appears or reports being ambivalent or uncommitted to reunification at this time.",
+            "Parent is uninterested in achieving reunification at this time.",
+            // "Unkown",
+            // "Not Applicable",
+          ]
+         },
+        { id: 137, title: "Responsibility in Maltreatment", 
+          help: [
+            "Parent accepts responsibility for his/her role in prior child maltreatment and demonstrates behavior changes that reduce risk of future maltreatment.",
+            "Parent understands his/her role in prior child maltreatment, but there may be some concern about their ability to translate that awareness into the prevention of future maltreatment of the child.",
+            "Parent does not accept primary responsibility. He/she blames others.",
+            "Parent denies any role in prior child maltreatment. Parent may deny that maltreatment took place, or may deny any connection and any level of responsibility for the maltreatment of the child.",
+            // "Unkown",
+            // "Not Applicable", 
+          ]
+         },
+        { id: 138, title: "Relationship with Abuser(s)", 
+          help: [
+            "Parent has no contact/relationships with individuals who were involved in earlier maltreatment of children. Anyone who had engaged in prior child maltreatment (e.g., paramour) is now out of his/her life.",
+            "Parent has limited contact with individuals who were involved in earlier maltreatment of child, but he/she is aware of the importance of protecting children from this individual(s).",
+            "Parent remains in relationship with individuals who were involved in earlier maltreatment.",
+            "Parent remains in relationship with individuals who were involved in earlier maltreatment and denies any risk with these individuals; and/or parent continues to associate with individuals who could be harmful to children.",
+            // "Unkown",
+            // "Not Applicable", 
+          ]
+         },
+        { id: 139, title: "History of Maltreatment of Children ", 
+          help: [
+            "No evidence of any history of maltreatment.",
+            "Parent’s maltreatment of children is limited to the most recent findings. He/she has only the current episode of DCFS involvement.",
+            "Parent has two indicated incidents of DCFS involvement.",
+            "Parent has three or more indicated incidents of DCFS involvement or any episode ending in the termination of parental rights.",
+            // "Unkown",
+            // "Not Applicable", 
+        ]
+         },        
+      ],
+    },
 ];
