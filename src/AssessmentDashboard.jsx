@@ -752,76 +752,8 @@ export default function AssessmentDashboard() {
               Refresh
             </button>
           </div>
- 
-          <div className="filters-row">
-            <div className="filter-search-wrapper">
-              <Search className="search-icon" />
-              <input
-                type="text"
-                className="filter-search"
-                // placeholder="Search across all fields..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
 
-            <select
-              className="filter-select"
-              value={filterColumn}
-              onChange={(e) => {
-                setFilterColumn(e.target.value);
-                setFilterValue('all'); // Reset filter value when column changes
-              }}
-            >
-              {/* <option value="all">Filter by Column</option> */}
-              <option value="assessmentId">Assessment ID</option>
-              <option value="caseId">Case ID</option>
-              <option value="assessmentType">Assessment Type</option>
-              <option value="status">Status</option>
-              <option value="createdOn">Created On</option>
-              <option value="createdBy">Created By</option>
-              <option value="submittedOn">Submitted On</option>
-            </select>
-
-            {filterColumn !== 'all' && (
-              <>
-                {(filterColumn === 'assessmentId' || filterColumn === 'caseId') ? (
-                  <select
-                    className="filter-select"
-                    value={filterValue}
-                    onChange={(e) => setFilterValue(e.target.value)}
-                  >
-                    <option value="all">All {filterColumn === 'assessmentId' ? 'Assessment IDs' : 'Case IDs'}</option>
-                    {(filterColumn === 'assessmentId' ? uniqueAssessmentIds : uniqueCaseIds).map(value => (
-                      <option key={value} value={value}>{value}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <select
-                    className="filter-select"
-                    value={filterValue}
-                    onChange={(e) => setFilterValue(e.target.value)}
-                  >
-                    <option value="all">All Values</option>
-                    {getFilterOptions().map(option => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
-                )}
-              </>
-            )}
-
-            {hasActiveFilters && (
-              <button
-                className="clear-filters-button"
-                onClick={clearFilters}
-                title="Clear all filters"
-              >
-                <X className="icon-sm" />
-                Clear Filters
-              </button>
-            )}
-          </div>          <div className="table-container">
+          <div className="table-container">
             <table className="assessment-table">
               <thead>
                 <tr>
