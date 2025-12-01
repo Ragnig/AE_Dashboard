@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "homepage": "https://github.com/Ragnig/AE_Dashboard.git",
+  "homepage": "https://ragnig.github.io/AE_Dashboard",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
