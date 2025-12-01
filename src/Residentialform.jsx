@@ -685,24 +685,6 @@ function ResidentialForm({ onClose, onSave, draftData }) {
     
     window.addEventListener('beforeunload', handleBeforeUnload);
     
-    // Immediately save assessment to dashboard when form opens (if not loading existing draft)
-    if (!draftData && typeof onSave === 'function') {
-      console.log('🟢 Residential: Triggering immediate dashboard save on form open');
-      
-      const todayIso = new Date().toISOString().split('T')[0];
-      
-      const saveData = {
-        id: assessmentId,
-        contract_number: formData.contract_number || "N/A",
-        status: "In-progress",
-        createdBy: "Current User",
-        assessment_date: todayIso,
-        autoSaved: true
-      };
-      
-      onSave(saveData);
-    }
-    
     if (draftData) {
       console.log('🔵 Residential: Loading draft data:', draftData);
       
@@ -779,7 +761,25 @@ function ResidentialForm({ onClose, onSave, draftData }) {
     
     // Track that user has answered at least one question
     if (value && value.toString().trim() !== '') {
+      const wasFirstAnswer = !hasAnsweredQuestion;
       setHasAnsweredQuestion(true);
+      
+      // Save to dashboard when first field is filled
+      if (wasFirstAnswer && typeof onSave === 'function') {
+        console.log('🟢 Residential: Saving to dashboard - first field filled');
+        
+        const saveData = {
+          id: assessmentId,
+          contract_number: name === 'contract_number' ? value : (formData.contract_number || "N/A"),
+          status: "In-progress",
+          createdBy: "Current User",
+          assessment_date: name === 'assessment_date' ? value : (formData.assessment_date || new Date().toISOString().split('T')[0]),
+          formData: { ...formData, [name]: value },
+          autoSaved: true
+        };
+        
+        onSave(saveData);
+      }
     }
     
     setFormData((prev) => ({ ...prev, [name]: value }));

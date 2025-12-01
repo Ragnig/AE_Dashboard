@@ -872,30 +872,6 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
     
     window.addEventListener('beforeunload', handleBeforeUnload);
     
-    // Immediately save assessment to dashboard when form opens (if not loading existing draft)
-    if (!draftData && typeof onSave === 'function') {
-      console.log('🟢 FARE: Triggering immediate dashboard save on form open');
-      
-      const todayIso = new Date().toISOString().split('T')[0];
-      
-      const saveData = {
-        id: assessmentId,
-        caseId: caseId || "N/A",
-        status: "In-progress",
-        createdBy: "Current User",
-        overview: {
-          caseId: caseId || "N/A",
-          childName: childName || "",
-          caseWorkerName: caseWorkerName || "",
-          dateCompleted: todayIso
-        },
-        answers: {},
-        autoSaved: true
-      };
-      
-      onSave(saveData);
-    }
-    
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
@@ -970,7 +946,7 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
   }, [unsavedChanges, formData, caseId, childName, dob, caregiverName, caseWorkerName, dateCompleted, isCompleted]);
 
   const handleAutoSave = async () => {
-    if (isCompleted || isAutoSavingRef.current || !unsavedChanges) return;
+    if (isCompleted || isAutoSavingRef.current || !unsavedChanges || !hasAnsweredQuestion) return;
     
     isAutoSavingRef.current = true;
     setAutoSaveStatus('saving');
@@ -1175,6 +1151,30 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
     // Track that user has answered at least one question
     if (updated.length > 0) {
       setHasAnsweredQuestion(true);
+      
+      // Save to dashboard when first question is answered
+      if (typeof onSave === 'function') {
+        console.log('🟢 FARE: Saving to dashboard - first question answered');
+        
+        const todayIso = new Date().toISOString().split('T')[0];
+        
+        const saveData = {
+          id: assessmentId,
+          caseId: caseId || "N/A",
+          status: "In-progress",
+          createdBy: "Current User",
+          overview: {
+            caseId: caseId || "N/A",
+            childName: childName || "",
+            caseWorkerName: caseWorkerName || "",
+            dateCompleted: todayIso
+          },
+          answers: formData,
+          autoSaved: true
+        };
+        
+        onSave(saveData);
+      }
     }
     
     setUnsavedChanges(true);
@@ -1206,7 +1206,32 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
     }));
     
     // Track that user has interacted with the form
+    const wasFirstAnswer = !hasAnsweredQuestion;
     setHasAnsweredQuestion(true);
+    
+    // Save to dashboard when first question is answered
+    if (wasFirstAnswer && typeof onSave === 'function') {
+      console.log('🟢 FARE: Saving to dashboard - first checkbox interaction');
+      
+      const todayIso = new Date().toISOString().split('T')[0];
+      
+      const saveData = {
+        id: assessmentId,
+        caseId: caseId || "N/A",
+        status: "In-progress",
+        createdBy: "Current User",
+        overview: {
+          caseId: caseId || "N/A",
+          childName: childName || "",
+          caseWorkerName: caseWorkerName || "",
+          dateCompleted: todayIso
+        },
+        answers: formData,
+        autoSaved: true
+      };
+      
+      onSave(saveData);
+    }
     
     setUnsavedChanges(true);
   };
@@ -1229,7 +1254,32 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
     
     // Track that user has answered at least one question
     if (value && value.trim() !== '') {
+      const wasFirstAnswer = !hasAnsweredQuestion;
       setHasAnsweredQuestion(true);
+      
+      // Save to dashboard when first question is answered
+      if (wasFirstAnswer && typeof onSave === 'function') {
+        console.log('🟢 FARE: Saving to dashboard - first text answer provided');
+        
+        const todayIso = new Date().toISOString().split('T')[0];
+        
+        const saveData = {
+          id: assessmentId,
+          caseId: caseId || "N/A",
+          status: "In-progress",
+          createdBy: "Current User",
+          overview: {
+            caseId: caseId || "N/A",
+            childName: childName || "",
+            caseWorkerName: caseWorkerName || "",
+            dateCompleted: todayIso
+          },
+          answers: formData,
+          autoSaved: true
+        };
+        
+        onSave(saveData);
+      }
     }
     
     setUnsavedChanges(true);
