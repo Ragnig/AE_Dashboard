@@ -640,9 +640,51 @@ function ResidentialForm({ onClose, onSave, draftData }) {
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
+  const [hasAnsweredQuestion, setHasAnsweredQuestion] = useState(false);
 
   // Load draft data
   useEffect(() => {
+    // Add beforeunload event listener for conditional save/discard
+    const handleBeforeUnload = (event) => {
+      if (!hasAnsweredQuestion) {
+        // User hasn't answered any questions, discard the form
+        console.log('🗑️ Residential: Discarding form on unload - no questions answered');
+        const assessments = JSON.parse(localStorage.getItem('assessments') || '[]');
+        const filteredAssessments = assessments.filter(a => a.id !== assessmentId);
+        localStorage.setItem('assessments', JSON.stringify(filteredAssessments));
+        return;
+      }
+      
+      // User has answered questions, auto-save
+      if (hasAnsweredQuestion && Object.keys(formData).length > 0) {
+        console.log('💾 Residential: Auto-saving before unload');
+        const saveData = {
+          id: assessmentId,
+          contract_number: formData.contract_number || "N/A",
+          status: "In-progress",
+          createdBy: "Current User",
+          assessment_date: formData.assessment_date || new Date().toISOString().split('T')[0],
+          formData: formData,
+          savedAt: new Date().toISOString()
+        };
+        
+        try {
+          const assessments = JSON.parse(localStorage.getItem('assessments') || '[]');
+          const existingIndex = assessments.findIndex(a => a.id === assessmentId);
+          if (existingIndex >= 0) {
+            assessments[existingIndex] = saveData;
+          } else {
+            assessments.unshift(saveData);
+          }
+          localStorage.setItem('assessments', JSON.stringify(assessments));
+        } catch (error) {
+          console.error('Error saving before unload:', error);
+        }
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
     // Immediately save assessment to dashboard when form opens (if not loading existing draft)
     if (!draftData && typeof onSave === 'function') {
       console.log('🟢 Residential: Triggering immediate dashboard save on form open');
@@ -670,10 +712,23 @@ function ResidentialForm({ onClose, onSave, draftData }) {
       if (formDataToLoad && Object.keys(formDataToLoad).length > 0) {
         console.log('🔵 Residential: Loading form data:', formDataToLoad);
         setFormData(formDataToLoad);
+        
+        // Check if user has answered questions in draft
+        const hasAnswers = Object.entries(formDataToLoad).some(([key, value]) => {
+          if (key === 'id' || key === 'status' || key === 'savedAt' || key === 'autoSaved') return false;
+          return value && value.toString().trim() !== '';
+        });
+        if (hasAnswers) {
+          setHasAnsweredQuestion(true);
+        }
       }
       
       setIsSubmitted(draftData.status === 'Completed');
     }
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, [draftData]);
 
   // Auto-save immediately when formData changes
@@ -721,6 +776,12 @@ function ResidentialForm({ onClose, onSave, draftData }) {
 
   const updateField = (name, value) => {
     if (isSubmitted) return; // Prevent editing if submitted
+    
+    // Track that user has answered at least one question
+    if (value && value.toString().trim() !== '') {
+      setHasAnsweredQuestion(true);
+    }
+    
     setFormData((prev) => ({ ...prev, [name]: value }));
     setUnsavedChanges(true);
   };
@@ -893,6 +954,17 @@ function ResidentialForm({ onClose, onSave, draftData }) {
   };
 
   const handleCancel = () => {
+    if (!hasAnsweredQuestion) {
+      // User hasn't answered any questions, discard the form
+      console.log('🗑️ Residential: Discarding form - no questions answered');
+      const assessments = JSON.parse(localStorage.getItem('assessments') || '[]');
+      const filteredAssessments = assessments.filter(a => a.id !== assessmentId);
+      localStorage.setItem('assessments', JSON.stringify(filteredAssessments));
+      if (onClose) onClose();
+      window.location.reload();
+      return;
+    }
+    
     if (unsavedChanges && !isSubmitted) {
       setShowUnsavedWarning(true);
     } else {

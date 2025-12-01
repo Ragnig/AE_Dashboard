@@ -805,8 +805,73 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
   const autoSaveTimerRef = useRef(null);
   const isAutoSavingRef = useRef(false);
   const [showSaveConfirmModal, setShowSaveConfirmModal] = useState(false);
+  const [hasAnsweredQuestion, setHasAnsweredQuestion] = useState(false);
+  const [hasAnsweredQuestion, setHasAnsweredQuestion] = useState(false);
 
   useEffect(() => {
+    // Add beforeunload event listener for conditional save/discard
+    const handleBeforeUnload = (event) => {
+      if (!hasAnsweredQuestion) {
+        // User hasn't answered any questions, discard the form
+        console.log('🗑️ FARE: Discarding form on unload - no questions answered');
+        const assessments = JSON.parse(localStorage.getItem('assessments') || '[]');
+        const filteredAssessments = assessments.filter(a => a.id !== assessmentId);
+        localStorage.setItem('assessments', JSON.stringify(filteredAssessments));
+        return;
+      }
+      
+      // User has answered questions, auto-save
+      if (hasAnsweredQuestion && !isCompleted && Object.keys(formData).length > 0) {
+        console.log('💾 FARE: Auto-saving before unload');
+        // Note: beforeunload handlers are limited, so we do sync localStorage save
+        const saveData = {
+          id: assessmentId,
+          caseId: caseId || 'N/A',
+          caseName: childName || 'N/A',
+          overview: { caseId, childName, dob, caregiverName, caseWorkerName, dateCompleted },
+          answers: formData,
+          status: 'In-progress',
+          savedAt: new Date().toISOString()
+        };
+        
+        try {
+          const assessments = JSON.parse(localStorage.getItem('assessments') || '[]');
+          const existingIndex = assessments.findIndex(a => a.id === assessmentId);
+          if (existingIndex >= 0) {
+            assessments[existingIndex] = saveData;
+          } else {
+            assessments.unshift(saveData);
+          }
+          localStorage.setItem('assessments', JSON.stringify(assessments));
+        } catch (error) {
+          console.error('Error saving before unload:', error);
+        }
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+      if (!hasAnsweredQuestion) {
+        // User hasn't answered any questions, discard the form
+        console.log('🗑️ FARE: Discarding form - no questions answered');
+        const assessments = JSON.parse(localStorage.getItem('assessments') || '[]');
+        const filteredAssessments = assessments.filter(a => a.id !== assessmentId);
+        localStorage.setItem('assessments', JSON.stringify(filteredAssessments));
+        return;
+      }
+      
+      // User has answered questions, auto-save
+      if (hasAnsweredQuestion && !isCompleted) {
+        console.log('💾 FARE: Auto-saving before unload');
+        handleAutoSave();
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
     // Immediately save assessment to dashboard when form opens (if not loading existing draft)
     if (!draftData && typeof onSave === 'function') {
       console.log('🟢 FARE: Triggering immediate dashboard save on form open');
@@ -830,6 +895,10 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
       
       onSave(saveData);
     }
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
     
     if (draftData) {
       console.log('🔵 FARE: Loading draft data:', draftData);
@@ -1102,6 +1171,12 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
         }
       }
     }));
+    
+    // Track that user has answered at least one question
+    if (updated.length > 0) {
+      setHasAnsweredQuestion(true);
+    }
+    
     setUnsavedChanges(true);
     if (optionSettings.requireYouthComment || optionSettings.requireInterviewerComment) {
       setProceedBlocked(prev => ({...prev, [questionId]: true}));
@@ -1129,6 +1204,10 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
         }
       }
     }));
+    
+    // Track that user has interacted with the form
+    setHasAnsweredQuestion(true);
+    
     setUnsavedChanges(true);
   };
 
@@ -1147,6 +1226,12 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
         }
       }
     }));
+    
+    // Track that user has answered at least one question
+    if (value && value.trim() !== '') {
+      setHasAnsweredQuestion(true);
+    }
+    
     setUnsavedChanges(true);
     setValidationErrors(prev => {
       const newErrors = {...prev};
@@ -1316,6 +1401,18 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
 
   const handleSaveAndExit = async () => {
     setShowSaveConfirmModal(false);
+    
+    if (!hasAnsweredQuestion) {
+      // User hasn't answered any questions, discard the form
+      console.log('🗑️ FARE: Discarding form - no questions answered');
+      const assessments = JSON.parse(localStorage.getItem('assessments') || '[]');
+      const filteredAssessments = assessments.filter(a => a.id !== assessmentId);
+      localStorage.setItem('assessments', JSON.stringify(filteredAssessments));
+      window.scrollTo(0, 0);
+      window.location.reload();
+      return;
+    }
+    
     setIsSaving(true);
     try {
       const saveData = {

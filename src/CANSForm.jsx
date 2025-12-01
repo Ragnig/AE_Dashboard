@@ -81,8 +81,62 @@ export default function BasicInfoForm({ overview = demoOverview, sections = demo
   const [activeSectionId, setActiveSectionId] = useState(visibleSections[0]?.id ?? null);
   const [currentGlobalIndex, setCurrentGlobalIndex] = useState(flatRows.length ? 0 : null);
   const [answers, setAnswers] = useState({}); // { rowId: { score, description, unk, na } }
+  const [hasAnsweredQuestion, setHasAnsweredQuestion] = useState(false);
 
   const [badgePageIndex, setBubblePageIndex] = useState(0);
+
+  // Generate assessment ID for tracking
+  const assessmentId = useMemo(() => {
+    return 'cans_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  }, []);
+
+  useEffect(() => {
+    // Add beforeunload event listener for conditional save/discard
+    const handleBeforeUnload = (event) => {
+      if (!hasAnsweredQuestion) {
+        // User hasn't answered any questions, discard the form
+        console.log('🗑️ CANS: Discarding form on unload - no questions answered');
+        const assessments = JSON.parse(localStorage.getItem('assessments') || '[]');
+        const filteredAssessments = assessments.filter(a => a.id !== assessmentId);
+        localStorage.setItem('assessments', JSON.stringify(filteredAssessments));
+        return;
+      }
+      
+      // User has answered questions, auto-save
+      if (hasAnsweredQuestion && Object.keys(answers).length > 0) {
+        console.log('💾 CANS: Auto-saving before unload');
+        const saveData = {
+          id: assessmentId,
+          caseId: formData.caseId || "N/A",
+          caseName: formData.caseName || formData.memberName || "N/A",
+          status: "In-progress",
+          createdBy: "Current User",
+          overview: formData,
+          answers: answers,
+          savedAt: new Date().toISOString()
+        };
+        
+        try {
+          const assessments = JSON.parse(localStorage.getItem('assessments') || '[]');
+          const existingIndex = assessments.findIndex(a => a.id === assessmentId);
+          if (existingIndex >= 0) {
+            assessments[existingIndex] = saveData;
+          } else {
+            assessments.unshift(saveData);
+          }
+          localStorage.setItem('assessments', JSON.stringify(assessments));
+        } catch (error) {
+          console.error('Error saving before unload:', error);
+        }
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasAnsweredQuestion, answers, formData, assessmentId]);
 
   useEffect(() => {
     if (!visibleSections || visibleSections.length === 0) {
@@ -207,6 +261,14 @@ export default function BasicInfoForm({ overview = demoOverview, sections = demo
       // Load answers
       if (draftData.answers) {
         setAnswers(draftData.answers);
+        
+        // Check if user has answered questions in draft
+        const hasAnswers = Object.values(draftData.answers).some(answer => {
+          return answer.score !== null || (answer.description && answer.description.trim() !== '') || answer.unk || answer.na;
+        });
+        if (hasAnswers) {
+          setHasAnsweredQuestion(true);
+        }
       }
       
       // Set server doc ID if available
@@ -239,6 +301,11 @@ export default function BasicInfoForm({ overview = demoOverview, sections = demo
   // setAnswer writes description under "description" to match rendering logic
   const setAnswer = (rowId, patch) => {
     console.log('🔄 setAnswer called with rowId:', rowId, 'patch:', patch);
+    
+    // Track that user has answered at least one question
+    if (patch && (patch.score !== null || (patch.description && patch.description.trim() !== '') || patch.unk || patch.na)) {
+      setHasAnsweredQuestion(true);
+    }
     
     setAnswers((prev) => {
       console.log('🔄 Previous answers:', prev);
@@ -733,6 +800,13 @@ function formatSchemaJSON(overview, answers) {
             if (savedOk) {
         try {
           if (typeof onClose === "function") {
+            if (!hasAnsweredQuestion) {
+              // User hasn't answered any questions, discard the form
+              console.log('🗑️ CANS: Discarding form - no questions answered');
+              const assessments = JSON.parse(localStorage.getItem('assessments') || '[]');
+              const filteredAssessments = assessments.filter(a => a.id !== assessmentId);
+              localStorage.setItem('assessments', JSON.stringify(filteredAssessments));
+            }
             onClose();
           } else if (typeof window !== "undefined") {
             // Prefer going back in history if possible
@@ -989,6 +1063,13 @@ function formatSchemaJSON(overview, answers) {
               onClose={() => {
                 // You can redirect or close the window here
                 if (typeof onClose === "function") {
+                  if (!hasAnsweredQuestion) {
+                    // User hasn't answered any questions, discard the form
+                    console.log('🗑️ CANS: Discarding form - no questions answered');
+                    const assessments = JSON.parse(localStorage.getItem('assessments') || '[]');
+                    const filteredAssessments = assessments.filter(a => a.id !== assessmentId);
+                    localStorage.setItem('assessments', JSON.stringify(filteredAssessments));
+                  }
                   onClose();
                 } else if (window.history && window.history.length > 1) {
                   window.history.back();
