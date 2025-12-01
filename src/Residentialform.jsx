@@ -676,21 +676,26 @@ function ResidentialForm({ onClose, onSave, draftData }) {
     }
   }, [draftData]);
 
-  // Auto-save every 30 seconds
+  // Auto-save immediately when formData changes
   useEffect(() => {
     if (isSubmitted) return; // Don't auto-save if already submitted
     
-    const autoSaveInterval = setInterval(() => {
-      if (unsavedChanges && Object.keys(formData).length > 0) {
+    // Auto-save with 2-second debounce when form data changes
+    if (unsavedChanges && Object.keys(formData).length > 0) {
+      console.log('🟡 Residential: Scheduling immediate auto-save due to form changes');
+      
+      const autoSaveTimeout = setTimeout(() => {
         handleAutoSave();
-      }
-    }, 30000); // 30 seconds
+      }, 2000); // 2 seconds instead of 30
 
-    return () => clearInterval(autoSaveInterval);
+      return () => clearTimeout(autoSaveTimeout);
+    }
   }, [unsavedChanges, formData, isSubmitted]);
 
   const handleAutoSave = async () => {
     if (isSubmitted) return; // Don't auto-save if submitted
+    
+    console.log('🔵 Residential: Auto-saving form data:', formData);
     
     try {
       const saveData = {
@@ -704,13 +709,13 @@ function ResidentialForm({ onClose, onSave, draftData }) {
 
       if (onSave) {
         onSave(saveData);
+        console.log('✅ Residential: Auto-save successful');
       }
 
       setLastSaved(new Date());
       setUnsavedChanges(false);
-      console.log('Auto-saved at:', new Date().toLocaleTimeString());
     } catch (error) {
-      console.error('Error auto-saving:', error);
+      console.error('❌ Residential: Error auto-saving:', error);
     }
   };
 

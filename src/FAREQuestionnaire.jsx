@@ -888,9 +888,13 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
   useEffect(() => {
     if (isCompleted) return;
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-    if (unsavedChanges && !isAutoSavingRef.current) {
-      autoSaveTimerRef.current = setTimeout(() => handleAutoSave(), 30000);
+    
+    // Auto-save immediately when formData changes (with 2-second debounce)
+    if (unsavedChanges && !isAutoSavingRef.current && Object.keys(formData).length > 0) {
+      console.log('🟡 FARE: Scheduling immediate auto-save due to form changes');
+      autoSaveTimerRef.current = setTimeout(() => handleAutoSave(), 2000); // 2 seconds instead of 30
     }
+    
     return () => {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     };
@@ -898,8 +902,11 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
 
   const handleAutoSave = async () => {
     if (isCompleted || isAutoSavingRef.current || !unsavedChanges) return;
+    
     isAutoSavingRef.current = true;
     setAutoSaveStatus('saving');
+    console.log('🔵 FARE: Auto-saving form data:', formData);
+    
     try {
       const saveData = {
         id: assessmentId,
@@ -911,13 +918,18 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
         savedAt: new Date().toISOString(),
         autoSaved: true
       };
-      if (onSave) await onSave(saveData);
+      
+      if (onSave) {
+        await onSave(saveData);
+        console.log('✅ FARE: Auto-save successful');
+      }
+      
       setUnsavedChanges(false);
       setLastSavedAt(new Date());
       setAutoSaveStatus('saved');
       setTimeout(() => setAutoSaveStatus(''), 3000);
     } catch (error) {
-      console.error('Auto-save error:', error);
+      console.error('❌ FARE: Auto-save error:', error);
       setAutoSaveStatus('error');
       setTimeout(() => setAutoSaveStatus(''), 5000);
     } finally {
