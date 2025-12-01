@@ -1457,7 +1457,7 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
       const filteredAssessments = assessments.filter(a => a.id !== assessmentId);
       localStorage.setItem('assessments', JSON.stringify(filteredAssessments));
       window.scrollTo(0, 0);
-      window.location.reload();
+      window.location.href = '/Assessment-Dash-Board/';
       return;
     }
     
@@ -1475,7 +1475,7 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
       setUnsavedChanges(false);
       if (onSave) await onSave(saveData);
       window.scrollTo(0, 0);
-      window.location.reload();
+      window.location.href = '/Assessment-Dash-Board/';
     } catch (error) {
       console.error('Error saving draft:', error);
       alert('Failed to save draft. Please try again.');
@@ -2257,7 +2257,7 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
 })}
 
         <div className="footer-buttons">
-          <button 
+          {/* <button 
             className="btn btn-cancel" 
             onClick={() => {
               if (unsavedChanges && !isCompleted) {
@@ -2268,7 +2268,7 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
             }}
           >
             {isCompleted ? 'Close' : 'Cancel'}
-          </button>
+          </button> */}
           {!isCompleted && (
             <>
               <button onClick={handleSaveDraft} className="btn btn-draft" disabled={isSaving}>

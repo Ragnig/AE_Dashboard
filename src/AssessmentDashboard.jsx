@@ -416,8 +416,11 @@ export default function AssessmentDashboard() {
   };
  
   const handleCloseForm = () => {
+    console.log('🔍 handleCloseForm called');
+    console.log('🔍 Current activeForm:', activeForm);
     setActiveForm(null);
     setSelectedDraft(null);
+    console.log('🔍 Setting activeForm to null');
     // Clear URL hash
     window.location.hash = '';
     // Session will be cleared by the useEffect above
@@ -648,6 +651,7 @@ export default function AssessmentDashboard() {
 
   // If a form is active, show only the form
   if (activeForm) {
+    console.log('🔍 Rendering form view, activeForm:', activeForm);
     return (
       <div className="form-container">
         <div className="form-header">
@@ -687,6 +691,8 @@ export default function AssessmentDashboard() {
   }
  
   // Otherwise show the dashboard
+  console.log('🔍 Rendering dashboard view, activeForm is:', activeForm);
+  console.log('🔍 Assessments count:', assessments.length);
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
