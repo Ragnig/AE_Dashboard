@@ -897,6 +897,16 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
         console.log('🔵 FARE: Loading answers:', answersData);
         setFormData(answersData);
         
+        // Check if user has answered questions in draft
+        const hasAnswers = Object.values(answersData).some(answer => {
+          if (answer && answer.responses && answer.responses.length > 0) return true;
+          if (answer && typeof answer === 'string' && answer.trim() !== '') return true;
+          return false;
+        });
+        if (hasAnswers) {
+          setHasAnsweredQuestion(true);
+        }
+        
         const hasEndInterviewOption = QUESTIONS.some(question => {
           const questionData = answersData[question.id];
           if (questionData?.responses) {
@@ -935,7 +945,7 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     
     // Auto-save immediately when formData changes (with 2-second debounce)
-    if (unsavedChanges && !isAutoSavingRef.current && Object.keys(formData).length > 0) {
+    if (unsavedChanges && !isAutoSavingRef.current && Object.keys(formData).length > 0 && hasAnsweredQuestion) {
       console.log('🟡 FARE: Scheduling immediate auto-save due to form changes');
       autoSaveTimerRef.current = setTimeout(() => handleAutoSave(), 2000); // 2 seconds instead of 30
     }
@@ -943,7 +953,7 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
     return () => {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     };
-  }, [unsavedChanges, formData, caseId, childName, dob, caregiverName, caseWorkerName, dateCompleted, isCompleted]);
+  }, [unsavedChanges, formData, caseId, childName, dob, caregiverName, caseWorkerName, dateCompleted, isCompleted, hasAnsweredQuestion]);
 
   const handleAutoSave = async () => {
     if (isCompleted || isAutoSavingRef.current || !unsavedChanges || !hasAnsweredQuestion) return;
@@ -1150,30 +1160,34 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
     
     // Track that user has answered at least one question
     if (updated.length > 0) {
+      const wasFirstAnswer = !hasAnsweredQuestion;
       setHasAnsweredQuestion(true);
       
       // Save to dashboard when first question is answered
-      if (typeof onSave === 'function') {
+      if (wasFirstAnswer && typeof onSave === 'function') {
         console.log('🟢 FARE: Saving to dashboard - first question answered');
         
         const todayIso = new Date().toISOString().split('T')[0];
         
-        const saveData = {
-          id: assessmentId,
-          caseId: caseId || "N/A",
-          status: "In-progress",
-          createdBy: "Current User",
-          overview: {
+        // Update formData first, then save
+        setTimeout(() => {
+          const saveData = {
+            id: assessmentId,
             caseId: caseId || "N/A",
-            childName: childName || "",
-            caseWorkerName: caseWorkerName || "",
-            dateCompleted: todayIso
-          },
-          answers: formData,
-          autoSaved: true
-        };
-        
-        onSave(saveData);
+            status: "In-progress",
+            createdBy: "Current User",
+            overview: {
+              caseId: caseId || "N/A",
+              childName: childName || "",
+              caseWorkerName: caseWorkerName || "",
+              dateCompleted: todayIso
+            },
+            answers: formData,
+            autoSaved: true
+          };
+          
+          onSave(saveData);
+        }, 100);
       }
     }
     
@@ -1215,22 +1229,24 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
       
       const todayIso = new Date().toISOString().split('T')[0];
       
-      const saveData = {
-        id: assessmentId,
-        caseId: caseId || "N/A",
-        status: "In-progress",
-        createdBy: "Current User",
-        overview: {
+      setTimeout(() => {
+        const saveData = {
+          id: assessmentId,
           caseId: caseId || "N/A",
-          childName: childName || "",
-          caseWorkerName: caseWorkerName || "",
-          dateCompleted: todayIso
-        },
-        answers: formData,
-        autoSaved: true
-      };
-      
-      onSave(saveData);
+          status: "In-progress",
+          createdBy: "Current User",
+          overview: {
+            caseId: caseId || "N/A",
+            childName: childName || "",
+            caseWorkerName: caseWorkerName || "",
+            dateCompleted: todayIso
+          },
+          answers: formData,
+          autoSaved: true
+        };
+        
+        onSave(saveData);
+      }, 100);
     }
     
     setUnsavedChanges(true);
@@ -1263,22 +1279,24 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
         
         const todayIso = new Date().toISOString().split('T')[0];
         
-        const saveData = {
-          id: assessmentId,
-          caseId: caseId || "N/A",
-          status: "In-progress",
-          createdBy: "Current User",
-          overview: {
+        setTimeout(() => {
+          const saveData = {
+            id: assessmentId,
             caseId: caseId || "N/A",
-            childName: childName || "",
-            caseWorkerName: caseWorkerName || "",
-            dateCompleted: todayIso
-          },
-          answers: formData,
-          autoSaved: true
-        };
-        
-        onSave(saveData);
+            status: "In-progress",
+            createdBy: "Current User",
+            overview: {
+              caseId: caseId || "N/A",
+              childName: childName || "",
+              caseWorkerName: caseWorkerName || "",
+              dateCompleted: todayIso
+            },
+            answers: formData,
+            autoSaved: true
+          };
+          
+          onSave(saveData);
+        }, 100);
       }
     }
     

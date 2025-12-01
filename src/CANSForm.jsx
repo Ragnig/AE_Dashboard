@@ -303,44 +303,45 @@ export default function BasicInfoForm({ overview = demoOverview, sections = demo
     console.log('🔄 setAnswer called with rowId:', rowId, 'patch:', patch);
     
     // Track that user has answered at least one question
+    const wasFirstAnswer = !hasAnsweredQuestion;
     if (patch && (patch.score !== null || (patch.description && patch.description.trim() !== '') || patch.unk || patch.na)) {
       setHasAnsweredQuestion(true);
+      
+      // Trigger immediate save to dashboard only when first answer is given
+      if (wasFirstAnswer && typeof onSave === 'function') {
+        console.log('🟢 CANS: Saving to dashboard - first question answered');
+        
+        setTimeout(() => {
+          const saveData = {
+            id: assessmentId,
+            caseId: "123456",
+            caseName: "Bryant, Dianne", 
+            status: "In-progress",
+            createdBy: "Current User",
+            overview: {
+              caseId: "123456",
+              caseName: "Bryant, Dianne",
+              workerName: "Current User",
+              dateOfAssessment: todayIso,
+              personId: "789456",
+              memberName: "Bryant, Dianne",
+              memberDob: "2002-12-25",
+              memberRole: formData.memberRole || "Caregiver"
+            },
+            answers: next,
+            autoSaved: true
+          };
+          
+          console.log('🟢 Calling onSave immediately with:', saveData);
+          onSave(saveData);
+        }, 100);
+      }
     }
     
     setAnswers((prev) => {
       console.log('🔄 Previous answers:', prev);
       const next = { ...prev, [rowId]: { ...(prev[rowId] || { score: null, description: "", unk: false, na: false }), ...patch } };
       console.log('🔄 Next answers:', next);
-      
-      // Trigger immediate save to dashboard when any answer is given
-      if (typeof onSave === 'function') {
-        console.log('🟢 Triggering immediate dashboard save');
-        
-        const saveData = {
-          id: assessmentId,
-          caseId: "123456",
-          caseName: "Bryant, Dianne", 
-          status: "In-progress",
-          createdBy: "Current User",
-          overview: {
-            caseId: "123456",
-            caseName: "Bryant, Dianne",
-            workerName: "Current User",
-            dateOfAssessment: todayIso,
-            personId: "789456",
-            memberName: "Bryant, Dianne",
-            memberDob: "2002-12-25",
-            memberRole: formData.memberRole || "Caregiver"
-          },
-          answers: next,
-          autoSaved: true
-        };
-        
-        console.log('🟢 Calling onSave immediately with:', saveData);
-        onSave(saveData);
-      } else {
-        console.log('❌ onSave is not available');
-      }
       
       return next;
     });
