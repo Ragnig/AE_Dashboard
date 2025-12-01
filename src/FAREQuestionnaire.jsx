@@ -1490,7 +1490,7 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
                 </>
               )}
             </div>
-            <div style={{ fontSize: '12px', color: '#6B7280' }}>Auto-saves every 30 seconds</div>
+            {/* <div style={{ fontSize: '12px', color: '#6B7280' }}>Auto-saves every 30 seconds</div> */}
           </div>
         )}
 
@@ -2144,7 +2144,7 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
                     <path d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM11 15H9V13H11V15ZM11 11H9V5H11V11Z" fill="#6B7280"/>
                   </svg>
                   <div style={{ fontSize: '13px', color: '#374151', lineHeight: '1.5' }}>
-                    <strong>Note:</strong> Your form also auto-saves every 30 seconds, so your work is protected.
+                    {/* <strong>Note:</strong> Your form also auto-saves every 30 seconds, so your work is protected. */}
                   </div>
                 </div>
               </div>
