@@ -661,9 +661,17 @@ function ResidentialForm({ onClose, onSave, draftData }) {
       onSave(saveData);
     }
     
-    if (draftData && draftData.data) {
-      console.log('Loading Residential draft:', draftData);
-      setFormData(draftData.data);
+    if (draftData) {
+      console.log('🔵 Residential: Loading draft data:', draftData);
+      
+      // Handle both 'data' field (from auto-save) and direct fields
+      const formDataToLoad = draftData.data || draftData;
+      
+      if (formDataToLoad && Object.keys(formDataToLoad).length > 0) {
+        console.log('🔵 Residential: Loading form data:', formDataToLoad);
+        setFormData(formDataToLoad);
+      }
+      
       setIsSubmitted(draftData.status === 'Completed');
     }
   }, [draftData]);

@@ -832,7 +832,9 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
     }
     
     if (draftData) {
-      setCaseId(draftData.overview?.caseId || '');
+      console.log('🔵 FARE: Loading draft data:', draftData);
+      
+      setCaseId(draftData.overview?.caseId || draftData.caseId || '');
       setChildName(draftData.overview?.childName || '');
       setDob(draftData.overview?.dob || '');
       setCaregiverName(draftData.overview?.caregiverName || '');
@@ -843,11 +845,15 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
         setIsCompleted(true);
       }
       
-      if (draftData.answers) {
-        setFormData(draftData.answers);
+      // Handle both 'answers' field (from auto-save) and 'data.answers' field
+      const answersData = draftData.answers || draftData.data?.answers || {};
+      
+      if (answersData && Object.keys(answersData).length > 0) {
+        console.log('🔵 FARE: Loading answers:', answersData);
+        setFormData(answersData);
         
         const hasEndInterviewOption = QUESTIONS.some(question => {
-          const questionData = draftData.answers[question.id];
+          const questionData = answersData[question.id];
           if (questionData?.responses) {
             return questionData.responses.some(response => {
               const option = question.options.find(o => o.value === response);
@@ -860,7 +866,7 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
         if (hasEndInterviewOption) {
           setInterviewEnded(true);
           QUESTIONS.forEach(question => {
-            const questionData = draftData.answers[question.id];
+            const questionData = answersData[question.id];
             if (questionData?.responses) {
               questionData.responses.forEach(response => {
                 const option = question.options.find(o => o.value === response);
@@ -2144,7 +2150,7 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
                     <path d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM11 15H9V13H11V15ZM11 11H9V5H11V11Z" fill="#6B7280"/>
                   </svg>
                   <div style={{ fontSize: '13px', color: '#374151', lineHeight: '1.5' }}>
-                    {/* <strong>Note:</strong> Your form also auto-saves every 30 seconds, so your work is protected. */}
+                    <strong>Note:</strong> Your form also auto-saves every 30 seconds, so your work is protected.
                   </div>
                 </div>
               </div>
