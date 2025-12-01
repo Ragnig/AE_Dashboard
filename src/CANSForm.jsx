@@ -26,8 +26,6 @@ const badgesPerPage = 15;
 
 /* -------------------- COMPONENT -------------------- */
 export default function CANSForm({ overview = demoOverview, sections = demoSections, onClose, onSave, draftData }) {
-  console.log('🚀 BasicInfoForm component loaded');
-  console.log('🚀 onSave prop:', typeof onSave, onSave);
   
   const d = new Date();
   const pad = (n) => String(n).padStart(2, "0");
