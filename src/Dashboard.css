@@ -132,12 +132,16 @@ body {
   transition: all 0.2s ease;
   cursor: pointer;
   border: 1px solid #e5e7eb;
+  text-decoration: none;
+  color: inherit;
 }
 
 .assessment-card:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transform: translateY(-1px);
   border-color: #d1d5db;
+  text-decoration: none;
+  color: inherit;
 }
 
 .assessment-card-icon {

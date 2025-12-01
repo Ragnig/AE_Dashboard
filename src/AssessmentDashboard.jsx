@@ -710,7 +710,25 @@ export default function AssessmentDashboard() {
             <h2>List of Assessments</h2>
           </div>
           <div className="assessment-cards">
-            <div className="assessment-card" onClick={() => setActiveForm('cans')}>
+            <a
+              href={`${window.location.origin}${window.location.pathname}#assessment/cans/new-${Date.now()}`}
+              className="assessment-card"
+              title="CANS Assessment - Right-click to open in new tab/window"
+              onClick={(e) => {
+                // For modifier keys or special clicks, let browser handle it
+                if (e.ctrlKey || e.metaKey || e.shiftKey) {
+                  return true;
+                }
+                
+                // Prevent default for regular clicks and handle in same tab
+                e.preventDefault();
+                setActiveForm('cans');
+              }}
+              onContextMenu={() => {
+                // Allow right-click context menu to work normally
+                // Browser will handle "Open in new tab/window/incognito" options
+              }}
+            >
               <div className="assessment-card-icon cans">📋</div>
               <div className="assessment-card-content">
                 <div className="assessment-card-title">
@@ -718,9 +736,27 @@ export default function AssessmentDashboard() {
                 </div>
               </div>
               <ExternalLink className="assessment-card-arrow" />
-            </div>
- 
-            <div className="assessment-card" onClick={() => setActiveForm('fare')}>
+            </a>
+
+            <a
+              href={`${window.location.origin}${window.location.pathname}#assessment/fare/new-${Date.now()}`}
+              className="assessment-card"
+              title="FARE Assessment - Right-click to open in new tab/window"
+              onClick={(e) => {
+                // For modifier keys or special clicks, let browser handle it
+                if (e.ctrlKey || e.metaKey || e.shiftKey) {
+                  return true;
+                }
+                
+                // Prevent default for regular clicks and handle in same tab
+                e.preventDefault();
+                setActiveForm('fare');
+              }}
+              onContextMenu={() => {
+                // Allow right-click context menu to work normally
+                // Browser will handle "Open in new tab/window/incognito" options
+              }}
+            >
               <div className="assessment-card-icon fare">📝</div>
               <div className="assessment-card-content">
                 <div className="assessment-card-title">
@@ -728,9 +764,27 @@ export default function AssessmentDashboard() {
                 </div>
               </div>
               <ExternalLink className="assessment-card-arrow" />
-            </div>
- 
-            <div className="assessment-card" onClick={() => setActiveForm('residential')}>
+            </a>
+
+            <a
+              href={`${window.location.origin}${window.location.pathname}#assessment/residential/new-${Date.now()}`}
+              className="assessment-card"
+              title="Residential Assessment - Right-click to open in new tab/window"
+              onClick={(e) => {
+                // For modifier keys or special clicks, let browser handle it
+                if (e.ctrlKey || e.metaKey || e.shiftKey) {
+                  return true;
+                }
+                
+                // Prevent default for regular clicks and handle in same tab
+                e.preventDefault();
+                setActiveForm('residential');
+              }}
+              onContextMenu={() => {
+                // Allow right-click context menu to work normally
+                // Browser will handle "Open in new tab/window/incognito" options
+              }}
+            >
               <div className="assessment-card-icon residential">🏢</div>
               <div className="assessment-card-content">
                 <div className="assessment-card-title">
@@ -738,7 +792,7 @@ export default function AssessmentDashboard() {
                 </div>
               </div>
               <ExternalLink className="assessment-card-arrow" />
-            </div>
+            </a>
           </div>
         </div>
  
@@ -902,6 +956,7 @@ export default function AssessmentDashboard() {
                           className="assessment-link"
                           data-assessment-id={assessment.id}
                           data-assessment-type={assessment.type}
+                          title={`${assessment.type} Assessment ${assessment.id} - Right-click to open in new tab/window`}
                           onClick={(e) => {
                             // Save data immediately for all click types
                             const assessmentData = JSON.stringify(assessment);
@@ -913,9 +968,9 @@ export default function AssessmentDashboard() {
                               console.log('Storage not available');
                             }
                             
-                            // For modifier keys or special clicks, don't prevent default
-                            if (e.ctrlKey || e.metaKey || e.button === 1 || e.button === 2 || e.shiftKey) {
-                              // Let the browser handle opening in new tab/window/incognito
+                            // For modifier keys (Ctrl+click, Cmd+click), middle click, or shift-click, let browser handle it
+                            if (e.ctrlKey || e.metaKey || e.button === 1 || e.shiftKey) {
+                              // Let the browser handle opening in new tab/window
                               return true;
                             }
                             
@@ -936,7 +991,7 @@ export default function AssessmentDashboard() {
                             }
                           }}
                           onMouseDown={(e) => {
-                            // Save data on mouse down for all click types (including right-click)
+                            // Save data on mouse down for all click types (including middle-click and right-click)
                             const assessmentData = JSON.stringify(assessment);
                             try {
                               localStorage.setItem('currentAssessmentDraft', assessmentData);
@@ -946,7 +1001,7 @@ export default function AssessmentDashboard() {
                             }
                           }}
                           onContextMenu={(e) => {
-                            // Additional save for right-click context menu
+                            // Save data when right-click context menu is triggered
                             const assessmentData = JSON.stringify(assessment);
                             try {
                               localStorage.setItem('currentAssessmentDraft', assessmentData);
@@ -954,7 +1009,19 @@ export default function AssessmentDashboard() {
                             } catch (error) {
                               console.log('Storage not available in context menu');
                             }
-                            // Don't prevent default - allow context menu to show
+                            // Don't prevent default - allow right-click context menu to show normally
+                          }}
+                          onAuxClick={(e) => {
+                            // Handle middle-click (button 1) and other auxiliary clicks
+                            if (e.button === 1) {
+                              const assessmentData = JSON.stringify(assessment);
+                              try {
+                                localStorage.setItem('currentAssessmentDraft', assessmentData);
+                                sessionStorage.setItem('selectedDraft', assessmentData);
+                              } catch (error) {
+                                console.log('Storage not available on aux click');
+                              }
+                            }
                           }}
                         >
                           {assessment.id}

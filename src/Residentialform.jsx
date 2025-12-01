@@ -992,20 +992,7 @@ function ResidentialForm({ onClose, onSave, draftData }) {
         </div>
       )}
 
-      {/* Auto-save indicator */}
-      {!isSubmitted && lastSaved && (
-        <div style={{
-          backgroundColor: '#f5f5f5',
-          padding: '8px 16px',
-          marginBottom: '10px',
-          fontSize: '14px',
-          color: '#666',
-          textAlign: 'right',
-          borderRadius: '4px'
-        }}>
-          Last auto-saved: {lastSaved.toLocaleTimeString()}
-        </div>
-      )}
+
 
       {/* Header */}
       <div className="header">
@@ -1620,14 +1607,6 @@ function ResidentialForm({ onClose, onSave, draftData }) {
         </div>
 
         <div className="submit-section">
-          <button 
-            type="button" 
-            className="btn-cancel"
-            onClick={handleCancel}
-            disabled={isSaving}
-          >
-            {isSubmitted ? 'Close' : 'Cancel'}
-          </button>
           {!isSubmitted && (
             <>
               <button 
