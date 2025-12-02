@@ -82,7 +82,7 @@ export default function CANSForm({ overview = demoOverview, sections = demoSecti
   const [answers, setAnswers] = useState({}); // { rowId: { score, description, unk, na } }
   const [hasAnsweredQuestion, setHasAnsweredQuestion] = useState(false);
 
-  const [badgePageIndex, setBubblePageIndex] = useState(0);
+  const [badgePageIndex, setBadgePageIndex] = useState(0);
 
   useEffect(() => {
     // Add beforeunload event listener for conditional save/discard
@@ -145,7 +145,7 @@ export default function CANSForm({ overview = demoOverview, sections = demoSecti
       setActiveSectionId(first.id);
       const r = sectionRanges.get(first.id);
       setCurrentGlobalIndex(r ? r.start : 0);
-      setBubblePageIndex(0);
+      setBadgePageIndex(0);
       return;
     }
 
@@ -159,11 +159,11 @@ export default function CANSForm({ overview = demoOverview, sections = demoSecti
     const sectionStart = sectionRanges.get(activeSectionId)?.start ?? 0;
     const indexInSection = Math.max(0, (currentGlobalIndex ?? 0) - sectionStart);
     const page = Math.floor(indexInSection / badgesPerPage);
-    setBubblePageIndex(page);
+    setBadgePageIndex(page);
   }, [currentGlobalIndex, activeSectionId, sectionRanges]);
 
   useEffect(() => {
-    setBubblePageIndex(0);
+    setBadgePageIndex(0);
   }, [activeSectionId]);
 
   // Generate assessment ID immediately (or use from draftData)
@@ -373,7 +373,7 @@ export default function CANSForm({ overview = demoOverview, sections = demoSecti
     if (!r) return;
     setActiveSectionId(sectionId);
     setCurrentGlobalIndex(r.start);
-    setBubblePageIndex(0);
+    setBadgePageIndex(0);
   };
 
   const goPrev = () => {
@@ -791,8 +791,10 @@ function formatSchemaJSON(overview, answers) {
       alert("Error while saving draft: " + (err.message || String(err)));
     } finally {
       setIsSaving(false);
-    //    If saved successfully, the form closes
-            if (savedOk) {
+    }
+    
+    // If saved successfully, the form closes
+    if (savedOk) {
         try {
           if (typeof onClose === "function") {
             if (!hasAnsweredQuestion) {
@@ -815,7 +817,6 @@ function formatSchemaJSON(overview, answers) {
         } catch (err) {
           console.warn("Error while attempting to close form after save:", err);
         }
-      }
     }
   }
 
@@ -1021,7 +1022,7 @@ function formatSchemaJSON(overview, answers) {
                     if (r) {
                       setActiveSectionId(s.id);
                       setCurrentGlobalIndex(r.start);
-                      setBubblePageIndex(0);
+                      setBadgePageIndex(0);
                     }
                   } else if (isSubmitted && !isViewOnly) {
                     // Exit success screen and go to selected section in read-only mode
@@ -1030,7 +1031,7 @@ function formatSchemaJSON(overview, answers) {
                     if (r) {
                       setActiveSectionId(s.id);
                       setCurrentGlobalIndex(r.start);
-                      setBubblePageIndex(0);
+                      setBadgePageIndex(0);
                     }
                   } else {
                     onSelectSection(s.id); 
@@ -1097,7 +1098,7 @@ function formatSchemaJSON(overview, answers) {
                 if (firstSection) {
                   setActiveSectionId(firstSection.id);
                   setCurrentGlobalIndex(0);
-                  setBubblePageIndex(0);
+                  setBadgePageIndex(0);
                 }
               }} 
               onSubmit={handleComplete}
@@ -1110,7 +1111,7 @@ function formatSchemaJSON(overview, answers) {
                 if (r) {
                   setActiveSectionId(sectionId);
                   setCurrentGlobalIndex(r.start);
-                  setBubblePageIndex(0);
+                  setBadgePageIndex(0);
                 }
               }}
             />
@@ -1305,8 +1306,7 @@ function formatSchemaJSON(overview, answers) {
                 </div>
               </div>
             </div>
-          )}
-</>
+            </>
           )}
         </section>
       </div>
