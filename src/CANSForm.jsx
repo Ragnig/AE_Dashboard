@@ -1274,9 +1274,11 @@ function formatSchemaJSON(overview, answers) {
           </div>
           </div>
           </div>
+          </>
+          )}
+        </section>
 
-
-          {/* Confirmation modal */}
+        {/* Confirmation modal */}
           {confirmOpen && (
             <div style={styles.confirmOverlay}>
               <div role="dialog" aria-modal="true" aria-labelledby="confirm-title" style={styles.confirmBox}>
@@ -1306,11 +1308,9 @@ function formatSchemaJSON(overview, answers) {
                 </div>
               </div>
             </div>
-            </>
           )}
-        </section>
+        </div>
       </div>
-    </div>
     </>
   );
-}
+  }
