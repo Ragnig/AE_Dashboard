@@ -1484,7 +1484,7 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
     }
   };
 
-  const handleFinalize = () => {
+  const handleFinalize = async () => {
     if (isCompleted) {
       alert('This assessment is already completed and cannot be modified.');
       return;
@@ -1518,7 +1518,34 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
       setShowValidationModal(true);
       return;
     }
-    setShowSubmitConfirm(true);
+
+    // Submit directly without confirmation modal
+    const endInterviewInfo = checkForEndInterviewOptions();
+    if (endInterviewInfo && !interviewEnded) {
+      setInterviewEnded(true);
+      setEndedReason(`Interview ended by rule: Question ${endInterviewInfo.questionSection} - Selected "${endInterviewInfo.response}"`);
+    }
+    
+    setIsSaving(true);
+    try {
+      const saveData = {
+        id: assessmentId,
+        caseId: caseId || 'N/A',
+        caseName: childName || 'N/A',
+        overview: { caseId, childName, dob, caregiverName, caseWorkerName, dateCompleted },
+        answers: formData,
+        status: 'Completed',
+        savedAt: new Date().toISOString()
+      };
+      setUnsavedChanges(false);
+      if (onSave) await onSave(saveData);
+      setIsCompleted(true);
+    } catch (error) {
+      console.error('Error finalizing assessment:', error);
+      alert('Failed to finalize assessment. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleConfirmSubmit = async () => {

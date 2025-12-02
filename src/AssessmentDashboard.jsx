@@ -503,6 +503,11 @@ export default function AssessmentDashboard() {
     }
    
     return matchesSearch && matchesFilter;
+  }).sort((a, b) => {
+    // Sort by creation date - newest first
+    const dateA = new Date(a.createdOn);
+    const dateB = new Date(b.createdOn);
+    return dateB.getTime() - dateA.getTime();
   });
  
   // Pagination calculations
