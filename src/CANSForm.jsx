@@ -84,6 +84,9 @@ export default function CANSForm({ overview = demoOverview, sections = demoSecti
 
   const [badgePageIndex, setBadgePageIndex] = useState(0);
 
+  // Generate assessment ID immediately (or use from draftData)
+  const [assessmentId] = useState(() => draftData?.id || `CANS-${Date.now()}`);
+
   useEffect(() => {
     // Add beforeunload event listener for conditional save/discard
     const handleBeforeUnload = (event) => {
@@ -166,9 +169,6 @@ export default function CANSForm({ overview = demoOverview, sections = demoSecti
     setBadgePageIndex(0);
   }, [activeSectionId]);
 
-  // Generate assessment ID immediately (or use from draftData)
-  const [assessmentId] = useState(() => draftData?.id || `CANS-${Date.now()}`);
-  
   // save/autosave states
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -214,34 +214,8 @@ export default function CANSForm({ overview = demoOverview, sections = demoSecti
 
   // Load draft data when component mounts
   useEffect(() => {
-    // Immediately save assessment to dashboard when form opens (if not loading existing draft)
-    if (!draftData && typeof onSave === 'function') {
-      console.log('🟢 CANS: Triggering immediate dashboard save on form open');
-      
-      const todayIso = new Date().toISOString().split('T')[0];
-      
-      const saveData = {
-        id: assessmentId,
-        caseId: "123456",
-        caseName: "Bryant, Dianne",
-        status: "In-progress",
-        createdBy: "Current User",
-        overview: {
-          caseId: "123456",
-          caseName: "Bryant, Dianne",
-          workerName: "Current User",
-          dateOfAssessment: todayIso,
-          personId: "789456",
-          memberName: "Bryant, Dianne",
-          memberDob: "2002-12-25",
-          memberRole: "Caregiver"
-        },
-        answers: {},
-        autoSaved: true
-      };
-      
-      onSave(saveData);
-    }
+    // Note: Removed automatic save on form open to prevent empty assessments in dashboard
+    // Forms will only be saved when user answers at least one question
     
     if (draftData) {
       // Load overview data

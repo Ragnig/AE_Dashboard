@@ -341,7 +341,7 @@ export default function AssessmentDashboard() {
           setSelectedDraft(null);
           loadAssessments();
         } else {
-          alert('✅ FARE assessment saved as draft!');
+          // alert('✅ FARE assessment saved as draft!');
           setActiveForm(null);
           setSelectedDraft(null);
           loadAssessments();

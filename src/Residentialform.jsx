@@ -717,8 +717,8 @@ function ResidentialForm({ onClose, onSave, draftData }) {
   useEffect(() => {
     if (isSubmitted) return; // Don't auto-save if already submitted
     
-    // Auto-save with 2-second debounce when form data changes
-    if (unsavedChanges && Object.keys(formData).length > 0) {
+    // Auto-save with 2-second debounce when form data changes (only if user has answered questions)
+    if (unsavedChanges && Object.keys(formData).length > 0 && hasAnsweredQuestion) {
       console.log('🟡 Residential: Scheduling immediate auto-save due to form changes');
       
       const autoSaveTimeout = setTimeout(() => {
@@ -727,7 +727,7 @@ function ResidentialForm({ onClose, onSave, draftData }) {
 
       return () => clearTimeout(autoSaveTimeout);
     }
-  }, [unsavedChanges, formData, isSubmitted]);
+  }, [unsavedChanges, formData, isSubmitted, hasAnsweredQuestion]);
 
   const handleAutoSave = async () => {
     if (isSubmitted) return; // Don't auto-save if submitted
