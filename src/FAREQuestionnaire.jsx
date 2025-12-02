@@ -770,7 +770,7 @@ const QUESTIONS = [
   }
 ];
 
-export default function FAREQuestionnaire({ onSave, draftData }) {
+export default function FAREQuestionnaire({ onSave, onClose, draftData }) {
   // Generate Assessment ID immediately when form opens
   const [assessmentId] = useState(() => draftData?.id || `FARE-${Date.now()}`);
   
@@ -1456,8 +1456,11 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
       const assessments = JSON.parse(localStorage.getItem('assessments') || '[]');
       const filteredAssessments = assessments.filter(a => a.id !== assessmentId);
       localStorage.setItem('assessments', JSON.stringify(filteredAssessments));
-      window.scrollTo(0, 0);
-      window.location.href = '/AE_Dashboard/';
+      if (onClose) {
+        onClose();
+      } else {
+        window.location.href = '/AE_Dashboard/';
+      }
       return;
     }
     
@@ -1474,8 +1477,11 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
       };
       setUnsavedChanges(false);
       if (onSave) await onSave(saveData);
-      window.scrollTo(0, 0);
-      window.location.href = '/AE_Dashboard/';
+      if (onClose) {
+        onClose();
+      } else {
+        window.location.href = '/AE_Dashboard/';
+      }
     } catch (error) {
       console.error('Error saving draft:', error);
       alert('Failed to save draft. Please try again.');

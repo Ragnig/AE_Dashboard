@@ -278,8 +278,7 @@ export default function AssessmentDashboard() {
           // For completed status, keep form open to show SubmitSuccessScreen
           // Success screen will handle closing via onClose
         } else {
-          // For draft status, show alert and close form
-          alert('✅ CANS assessment saved as draft!');
+          // For draft status, close form without popup
           setActiveForm(null);
           setSelectedDraft(null);
         }

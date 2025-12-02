@@ -718,7 +718,17 @@ function formatSchemaJSON(overview, answers) {
 
   async function handleSaveDraft() {
     if (!anyAnswered) {
-      alert("Please answer at least one question before saving as draft.");
+      // No questions answered, just close the form without saving
+      console.log('🗑️ CANS: Closing form - no questions answered');
+      if (typeof onClose === "function") {
+        onClose();
+      } else if (typeof window !== "undefined") {
+        if (window.history && window.history.length > 1) {
+          window.history.back();
+        } else {
+          window.location.href = `/`;
+        }
+      }
       return;
     }
 
