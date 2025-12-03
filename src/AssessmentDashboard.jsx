@@ -396,9 +396,9 @@ export default function AssessmentDashboard() {
       // ✅ FIXED: Only show alerts and close form for manual saves (not auto-saves)
       if (!data.autoSaved) {
         if (data.status === 'Completed') {
-          alert('✅ Residential assessment submitted successfully!');
+          // For completed status, close form without popup
         } else {
-          alert('✅ Residential assessment saved as draft!');
+          // For draft status, close form without popup
         }
         setActiveForm(null);
         setSelectedDraft(null);
