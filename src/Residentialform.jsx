@@ -844,22 +844,43 @@ function App({ onClose, onSave, draftData }) {
     }
 
     console.log("Assessment Data:", formData);
+    
+    // Save as completed assessment
+    const saveData = {
+      id: assessmentId,
+      contract_number: formData.contract_number || 'N/A',
+      provider: formData.provider || 'N/A', 
+      date: formData.date || new Date().toISOString().split('T')[0],
+      status: 'Completed', // Set status to completed on submit
+      data: formData
+    };
+
+    if (onSave) {
+      onSave(saveData);
+    }
+    
+    console.log("Setting isSubmitted to true..."); // Debug log
     // Show success screen
     setIsSubmitted(true);
+    console.log("isSubmitted state should now be true"); // Debug log
     // Scroll to top to show the success message
     window.scrollTo(0, 0);
   };
 
   const handleReturnToDashboard = () => {
-    // TODO: Later implement navigation to dashboard
     console.log("Returning to dashboard...");
-    // For now, just reset the form
-    // When you have routing set up, you would navigate here
-    // Example: navigate('/dashboard') or window.location.href = '/dashboard'
+    
+    // Close the form and return to dashboard
+    if (onClose) {
+      onClose();
+    } else {
+      window.location.href = '/AE_Dashboard/';
+    }
   };
 
   return (
     <div className="container">
+      {console.log("Current isSubmitted state:", isSubmitted)} {/* Debug log */}
       {isSubmitted ? (
         // Success Screen
         <div className="success-screen">
@@ -867,7 +888,7 @@ function App({ onClose, onSave, draftData }) {
           <h1 className="success-title">Thank You!</h1>
           <p className="success-message">Successfully Saved</p>
           <p className="success-submessage">
-            Your ResidentiForm has been submitted successfully.
+            Your Residential Form has been submitted successfully.
           </p>
           <button 
             className="btn-dashboard" 
