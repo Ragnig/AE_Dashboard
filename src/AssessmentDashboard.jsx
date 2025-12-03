@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, Calendar, CheckCircle, Clock, FileText, X, Search, ExternalLink, ArrowLeft, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
-import './dashboard.css';
+import './Dashboard.css';
 import FAREQuestionnaire from './FAREQuestionnaire';
 import CANSForm from './CANSForm';
 import ResidentialForm from './Residentialform';
+
  
 export default function AssessmentDashboard() {
   const [assessments, setAssessments] = useState([]);
@@ -18,10 +19,17 @@ export default function AssessmentDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [dropdownSearch, setDropdownSearch] = useState('');
+  
+  // Date range filter states
+  const [dateRangeFilter, setDateRangeFilter] = useState({
+    enabled: false,
+    startDate: '',
+    endDate: ''
+  });
  
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 50;
  
   useEffect(() => {
     loadAssessments();
@@ -153,7 +161,7 @@ export default function AssessmentDashboard() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterColumn, filterValue, searchQuery]);
+  }, [filterColumn, filterValue, searchQuery, dateRangeFilter]);
  
   const loadAssessments = () => {
     try {
@@ -186,6 +194,11 @@ export default function AssessmentDashboard() {
     setActiveDropdown(null);
     setDropdownSearch('');
     setCurrentPage(1);
+    setDateRangeFilter({
+      enabled: false,
+      startDate: '',
+      endDate: ''
+    });
    
     // Add a small delay to show the animation
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -455,6 +468,25 @@ export default function AssessmentDashboard() {
       assessment.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
       assessment.createdBy.toLowerCase().includes(searchQuery.toLowerCase());
 
+    // Date range filter for completed assessments
+    let matchesDateRange = true;
+    if (dateRangeFilter.enabled && dateRangeFilter.startDate && dateRangeFilter.endDate) {
+      // Only apply to completed assessments
+      if (assessment.status.toLowerCase() === 'completed' && assessment.submittedOn && assessment.submittedOn !== '-') {
+        const submittedDate = new Date(assessment.submittedOn);
+        const startDate = new Date(dateRangeFilter.startDate);
+        const endDate = new Date(dateRangeFilter.endDate);
+        
+        // Set end date to end of day for inclusive range
+        endDate.setHours(23, 59, 59, 999);
+        
+        matchesDateRange = submittedDate >= startDate && submittedDate <= endDate;
+      } else if (assessment.status.toLowerCase() !== 'completed') {
+        // If date range filter is active, exclude non-completed assessments
+        matchesDateRange = false;
+      }
+    }
+
     // Column-based filtering
     let matchesFilter = true;
     if (filterColumn !== 'all' && filterValue !== 'all') {
@@ -501,7 +533,7 @@ export default function AssessmentDashboard() {
       }
     }
    
-    return matchesSearch && matchesFilter;
+    return matchesSearch && matchesDateRange && matchesFilter;
   }).sort((a, b) => {
     // Sort by creation date - newest first
     const dateA = new Date(a.createdOn);
@@ -535,9 +567,14 @@ export default function AssessmentDashboard() {
     setFilterColumn('all');
     setFilterValue('all');
     setSearchQuery('');
+    setDateRangeFilter({
+      enabled: false,
+      startDate: '',
+      endDate: ''
+    });
   };
  
-  const hasActiveFilters = filterColumn !== 'all' || filterValue !== 'all' || searchQuery !== '';
+  const hasActiveFilters = filterColumn !== 'all' || filterValue !== 'all' || searchQuery !== '' || dateRangeFilter.enabled;
 
   // Handle column header dropdown
   const handleColumnClick = (column, event) => {
@@ -817,6 +854,49 @@ export default function AssessmentDashboard() {
             </button>
           </div>
 
+          {/* Date Range Filter */}
+          <div className="date-range-filter">
+            <div className="filter-section">
+              <div className="date-inputs">
+                <div className="date-input-group">
+                  <label htmlFor="start-date">From:</label>
+                  <input
+                    id="start-date"
+                    type="date"
+                    value={dateRangeFilter.startDate}
+                    onChange={(e) => setDateRangeFilter(prev => ({
+                      ...prev,
+                      startDate: e.target.value,
+                      enabled: e.target.value !== '' || prev.endDate !== ''
+                    }))}
+                    className="date-input"
+                  />
+                </div>
+                
+                <div className="date-input-group">
+                  <label htmlFor="end-date">To:</label>
+                  <input
+                    id="end-date"
+                    type="date"
+                    value={dateRangeFilter.endDate}
+                    onChange={(e) => setDateRangeFilter(prev => ({
+                      ...prev,
+                      endDate: e.target.value,
+                      enabled: prev.startDate !== '' || e.target.value !== ''
+                    }))}
+                    className="date-input"
+                  />
+                </div>
+                
+                {dateRangeFilter.startDate && dateRangeFilter.endDate && (
+                  <div className="date-range-info">
+                    Showing completed assessments from {new Date(dateRangeFilter.startDate).toLocaleDateString()} to {new Date(dateRangeFilter.endDate).toLocaleDateString()}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="table-container">
             <table className="assessment-table">
               <thead>
@@ -837,7 +917,7 @@ export default function AssessmentDashboard() {
                             className="dropdown-search-input"
                           />
                         </div>
-                        {/* <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>All Assessment IDs</div> */}
+                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>All Assessment IDs</div>
                         {assessments.map(a => a.id).filter((id, index, self) => self.indexOf(id) === index)
                           .filter(id => id.toLowerCase().includes(dropdownSearch.toLowerCase()))
                           .map(id => (
@@ -862,7 +942,7 @@ export default function AssessmentDashboard() {
                             className="dropdown-search-input"
                           />
                         </div>
-                        {/* <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>All Case IDs</div> */}
+                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>All Case IDs</div>
                         {assessments.map(a => a.caseId).filter((id, index, self) => self.indexOf(id) === index)
                           .filter(id => id.toLowerCase().includes(dropdownSearch.toLowerCase()))
                           .map(id => (
