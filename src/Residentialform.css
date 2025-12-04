@@ -422,21 +422,136 @@ body {
   padding: 20px;
 }
 
+/* Button Styling */
+.submit-section {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 20px;
+  border-top: 1px solid #e5e7eb;
+  background: white;
+}
+
+.btn-cancel,
+.btn-draft,
 .btn-submit {
-  background-color: #28a745;
-  color: #ffffff;
-  padding: 12px 40px;
-  border: none;
-  border-radius: 5px;
-  font-size: 16px;
-  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-cancel {
+  background: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.btn-cancel:hover {
+  background: #f9fafb;
+}
+
+.btn-draft {
+  background: #6366f1;
+  color: white;
+}
+
+.btn-draft:hover {
+  background: #4f46e5;
+}
+
+.btn-submit {
+  background: #10b981;
+  color: white;
 }
 
 .btn-submit:hover {
-  background-color: #218838;
+  background: #059669;
 }
 
+.btn-cancel:disabled,
+.btn-draft:disabled,
+.btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Modal Styling */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 16px 0;
+}
+
+.modal-description {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+.modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  width: 100%;
+}
+
+.modal-primary {
+  background: #6366f1;
+  color: white;
+}
+
+.modal-primary:hover {
+  background: #4f46e5;
+}
+
+.modal-secondary {
+  background: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.modal-secondary:hover {
+  background: #f9fafb;
+}
 /* Print Styles */
 @media print {
   body {

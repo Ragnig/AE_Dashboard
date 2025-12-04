@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./Residentialform.css";
 
 const performanceStandards = [
@@ -138,7 +138,7 @@ const performanceStandards = [
     {
       category: "Shelter",
       description:
-        "Common areas are in good repair, have enough furniture in good repair, and include other items appropriate for the space’s function (e.g., tables, books, games, television, and decorations)."
+        "Common areas are in good repair, have enough furniture in good repair, and include other items appropriate for the space's function (e.g., tables, books, games, television, and decorations)."
     }
     // If your PDF has additional PS2 items beyond this point,
     // add them here in the same { category, description } format
@@ -232,7 +232,7 @@ const performanceStandards = [
       " Youth and family are treated with respect by all levels of staff where their right to personal privacy and confidentiality is valued. They are treated with dignity; staff do not discuss youth and families with other clients or those not professionally working with the youth and families.",
       " Youth/family are informed of their rights and grievance procedures; youth/family centered approach to the assessment and treatment planning and overall treatment experience.",
       " Communication with youth and families fosters youth voice and commitment to working through challenges; that provides an opportunity to enhance parent-child functioning and interaction; and creates opportunity to learn and practice new skills.",
-      " Programming, services, and individualized treatment planning are sensitive to youth’s racial, cultural, religious, and linguistic needs.",
+      " Programming, services, and individualized treatment planning are sensitive to youth's racial, cultural, religious, and linguistic needs.",
       " Utilization of the Child and Family Team meetings to activate and maintain family participation and decision making in the process of change and/or service provision; develop strategies to increase youth/family engagement; guide overall care and permanency planning.",
       " Youth/family connections are valued and incorporated in orientation, programming, therapeutic services, and visitation; active family finding efforts in collaboration with the youth and the CFTM members to develop additional support to achieve stability, stepdown and/or permanency."
     ],
@@ -365,7 +365,7 @@ const performanceStandards = [
     "Minimum required staff/youth ratios maintained; and staff members have capacity to adjust based on changes in clinical acuity.",
     "Discipline is provided in accordance with Rule 384; does not include threats/intimidation or physical repercussions to behavior; or is punitive in nature.",
     "Milieu operations are structured, consistent and predictable to provide a balance of therapeutic, recreational, and educational activities, promoting skill development, social interaction, and emotional wellbeing.",
-    "The program utilizes the Reasonable and Prudent Parental Standard and “normalcy parenting” standards when determining youth’s participation in extracurricular, enrichment, cultural and social activities offered by the child’s school, family of origin and/or in the community.",
+    "The program utilizes the Reasonable and Prudent Parental Standard and \"normalcy parenting\" standards when determining youth's participation in extracurricular, enrichment, cultural and social activities offered by the child's school, family of origin and/or in the community.",
     "Plans are in place to address the potential for unexpected circumstances (i.e. schedule changes, staff absence) that may arise in milieu operations.",
     "Elements/principles of trauma informed practice are evident in milieu operations.",
     "The program schedule provides programming to engage youth and support treatment progress; milieu staff are familiar with individual youth treatment goals and Behavior Treatment Plans; youth education plan or vocational programs are implemented; milieu staff support youth in completing school or vocational activities; Parallel programming is provided as needed to support the individualized needs of youth; milieu staff provide effective, goal-oriented, skill building and community groups according to the established schedule."
@@ -445,7 +445,7 @@ const performanceStandards = [
       "An adequate array of clinical services is provided including individual, group and family counseling or therapy as well as non-traditional therapies (music, art, drama, etc.).",
       "Psychiatric services are consistently provided and compliant with DCFS rules regarding prescription and administration of psychotropic medications.",
       "Sensory integration/modulation activities (i.e. yoga, exercise, other physical activities) and expressive therapies (e.g. art, music) are incorporated into treatment modalities.",
-      "Treatment plans are individualized, problem-oriented, and consider the youth’s strengths and goals. The program ensures that treatment plans include goals based on the youth’s preferences and are written in language that is easy to understand."
+      "Treatment plans are individualized, problem-oriented, and consider the youth's strengths and goals. The program ensures that treatment plans include goals based on the youth's preferences and are written in language that is easy to understand."
     ],
   references: [
     'Procedures <a href="https://ilga.gov/commission/jcar/admincode/089/089003010A01000R.html" target="_blank" rel="noopener noreferrer">301.100</a> Therapeutic Residential Programs',
@@ -628,13 +628,57 @@ const performanceStandards = [
 
 const stripTags = (html) => html.replace(/<[^>]*>/g, "");
 
-function ResidentialForm({ onClose }) {
+function App({ onClose, onSave, draftData }) {
   const [formData, setFormData] = useState({});
   const [scoreErrors, setScoreErrors] = useState({});
   const [dateError, setDateError] = useState("");
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [hasAnsweredQuestion, setHasAnsweredQuestion] = useState(false);
+  const [assessmentId] = useState(() => draftData?.id || `RES-${Date.now()}`);
+
+  // Load draft data when component mounts
+  useEffect(() => {
+    if (draftData) {
+      // Handle different data structures
+      let loadedData = null;
+      
+      if (draftData.data && draftData.data.data) {
+        // Data is nested (from dashboard storage)
+        loadedData = draftData.data.data;
+      } else if (draftData.data) {
+        // Data is directly under .data
+        loadedData = draftData.data;
+      } else {
+        // Data might be at root level
+        loadedData = draftData;
+      }
+      
+      if (loadedData && typeof loadedData === 'object') {
+        setFormData(loadedData);
+        
+        // Check if user has answered questions in draft
+        const hasAnswers = Object.values(loadedData).some(value => 
+          value && value.toString().trim() !== ''
+        );
+        if (hasAnswers) {
+          setHasAnsweredQuestion(true);
+        }
+      }
+    }
+  }, [draftData]);
+
+  // Monitor isSubmitted state changes
+  useEffect(() => {
+    console.log("isSubmitted state changed to:", isSubmitted);
+  }, [isSubmitted]);
 
   const updateField = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Track that user has answered at least one question
+    if (value && value.toString().trim() !== '' && !hasAnsweredQuestion) {
+      setHasAnsweredQuestion(true);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -714,32 +758,161 @@ function ResidentialForm({ onClose }) {
     return Math.round(total / count);
   };
 
-  // Scenario 2 (Next Step / QIP logic) is on hold.
-// If/when it’s reinstated, reintroduce shouldShowNextStep here
-// and re-enable the QIP banner markup in the assessment items.
-
-
   const getCharCount = (name) => (formData[name] || "").length;
+
+  // Get the highest severity score for a performance standard (lower number = higher severity)
+  const getDomainSeverity = (psId) => {
+    let lowestScore = null; // Lower score = higher severity
+
+    Object.entries(formData).forEach(([key, val]) => {
+      if (key.startsWith(`${psId}_item`) && key.endsWith('_score') && val !== "") {
+        const num = Number(val);
+        if (!Number.isNaN(num) && num >= 1 && num <= 4) {
+          if (lowestScore === null || num < lowestScore) {
+            lowestScore = num;
+          }
+        }
+      }
+    });
+
+    return lowestScore;
+  };
+
+  // Get color class based on severity score
+  const getDomainColorClass = (psId) => {
+    const severity = getDomainSeverity(psId);
+    
+    console.log(`PS: ${psId}, Severity: ${severity}`); // Debug log
+    
+    if (severity === null) return 'domain-default'; // No scores yet
+    if (severity === 1) return 'domain-red';        // Highest severity
+    if (severity === 2) return 'domain-yellow';     // Medium severity
+    return 'domain-green';                          // Low severity (3 or 4)
+  };
+
+  // Get severity badge text and class
+  const getSeverityBadge = (psId) => {
+    const severity = getDomainSeverity(psId);
+    
+    if (severity === null) return null;
+    if (severity === 1) return { text: 'HIGH SEVERITY - Score: 1', class: 'badge-red' };
+    if (severity === 2) return { text: 'MEDIUM SEVERITY - Score: 2', class: 'badge-yellow' };
+    return { text: 'LOW SEVERITY - Score: 3+', class: 'badge-green' };
+  };
+
+  const handleSaveAsDraft = () => {
+    if (!hasAnsweredQuestion) {
+      // No questions answered, just close the form without saving
+      console.log('🗑️ Residential: Closing form - no questions answered');
+      if (onClose) {
+        onClose();
+      } else {
+        window.location.href = '/AE_Dashboard/';
+      }
+      return;
+    }
+
+    console.log("Saving as Draft:", formData);
+    
+    const saveData = {
+      id: assessmentId,
+      contract_number: formData.contract_number || 'N/A',
+      provider: formData.provider || 'N/A', 
+      date: formData.date || new Date().toISOString().split('T')[0],
+      status: 'In-progress',
+      data: formData
+    };
+
+    if (onSave) {
+      onSave(saveData);
+    }
+
+    // Redirect to dashboard
+    if (onClose) {
+      onClose();
+    } else {
+      window.location.href = '/AE_Dashboard/';
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    console.log("Submit button clicked - checking for errors...");
+    console.log("Score errors:", scoreErrors);
+    console.log("Date error:", dateError);
+
     const hasScoreError = Object.values(scoreErrors).some(Boolean);
     if (hasScoreError) {
+      console.log("Submission blocked by score errors");
       alert("Please fix score errors before submitting.");
       return;
     }
     if (dateError) {
+      console.log("Submission blocked by date errors");
       alert("Please fix date errors before submitting.");
       return;
     }
 
+    console.log("No validation errors, proceeding with submission...");
     console.log("Assessment Data:", formData);
-    alert("Assessment submitted! Check console for full data.");
+    
+    // Save as completed assessment
+    const saveData = {
+      id: assessmentId,
+      contract_number: formData.contract_number || 'N/A',
+      provider: formData.provider || 'N/A', 
+      date: formData.date || new Date().toISOString().split('T')[0],
+      status: 'Completed', // Set status to completed on submit
+      data: formData
+    };
+
+    console.log("Calling onSave with:", saveData);
+    if (onSave) {
+      onSave(saveData);
+    }
+    
+    console.log("About to set isSubmitted to true...");
+    // Show success screen
+    setIsSubmitted(true);
+    console.log("isSubmitted has been set to true");
+    // Scroll to top to show the success message
+    window.scrollTo(0, 0);
+  };
+
+  const handleReturnToDashboard = () => {
+    console.log("Returning to dashboard...");
+    
+    // Close the form and return to dashboard
+    if (onClose) {
+      onClose();
+    } else {
+      window.location.href = '/AE_Dashboard/';
+    }
   };
 
   return (
     <div className="container">
+      {console.log("Current isSubmitted state:", isSubmitted)} {/* Debug log */}
+      {isSubmitted ? (
+        // Success Screen
+        <div className="success-screen">
+          <div className="success-icon">✓</div>
+          <h1 className="success-title">Thank You!</h1>
+          <p className="success-message">Successfully Saved</p>
+          <p className="success-submessage">
+            Your Residential Form has been submitted successfully.
+          </p>
+          <button 
+            className="btn-dashboard" 
+            onClick={handleReturnToDashboard}
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      ) : (
+        // Original Form
+        <>
       {/* Header */}
       <div className="header">
         <div className="header-left">
@@ -769,7 +942,6 @@ function ResidentialForm({ onClose }) {
               className="info-input"
               value={formData.date || ""}
               onChange={handleInputChange}
-              required
             />
 
             <label className="info-label">Contract#:</label>
@@ -779,7 +951,6 @@ function ResidentialForm({ onClose }) {
               className="info-input"
               value={formData.contract_number || ""}
               onChange={handleInputChange}
-              required
             />
 
             <label className="info-label">Provider:</label>
@@ -790,7 +961,6 @@ function ResidentialForm({ onClose }) {
               style={{ gridColumn: "span 3" }}
               value={formData.provider || ""}
               onChange={handleInputChange}
-              required
             />
           </div>
 
@@ -1167,7 +1337,7 @@ function ResidentialForm({ onClose }) {
                     />
 
                     <div className="score-row">
-                      <label className="required">
+                      <label>
                         Assessment Item Score (1-4):
                       </label>
                       <input
@@ -1178,7 +1348,6 @@ function ResidentialForm({ onClose }) {
                         max="4"
                         value={formData[scoreName] || ""}
                         onChange={handleScoreChange}
-                        required
                       />
                       {scoreErrors[scoreName] && (
                         <span className="validation-error">
@@ -1186,21 +1355,6 @@ function ResidentialForm({ onClose }) {
                         </span>
                       )}
                     </div>
-
-                    {/* Scenario 2 (Next Step / QIP banner) is on hold.
-                        Keeping markup commented so it can be re-enabled later. */}
-                    {/*
-                    <div
-                      className={
-                        "next-step-alert" +
-                        (shouldShowNextStep(ps.id, scoreName)
-                          ? " show"
-                          : "")
-                      }
-                    >
-                      Request Quality Improvement Plan (QIP)
-                    </div>
-                    */}
 
                     <div className="text-field">
                       <label>Comment:</label>
@@ -1238,18 +1392,24 @@ function ResidentialForm({ onClose }) {
               })}
 
               {/* Overall PS Comment */}
-              <div className="overall-comment-section">
-                <h3>Overall Performance Standard Comment</h3>
+              <div className={`overall-comment-section ${getDomainColorClass(ps.id)}`}>
+                <h3>
+                  Overall Performance Standard Comment
+                  {getSeverityBadge(ps.id) && (
+                    <span className={`severity-badge ${getSeverityBadge(ps.id).class}`}>
+                      {getSeverityBadge(ps.id).text}
+                    </span>
+                  )}
+                </h3>
 
                 <div className="text-field">
-                  <label className="required">Situation:</label>
+                  <label>Situation:</label>
                   <div className="instruction">
                     *Briefly describe the current situation or issue that needs to be addressed
                   </div>
                   <textarea
                     name={`${ps.id}_situation`}
                     maxLength={4000}
-                    required
                     value={formData[`${ps.id}_situation`] || ""}
                     onChange={handleInputChange}
                   />
@@ -1262,14 +1422,13 @@ function ResidentialForm({ onClose }) {
                 </div>
 
                 <div className="text-field">
-                  <label className="required">Background:</label>
+                  <label>Background:</label>
                   <div className="instruction">
                     *Clearly provide relevant background information that provides context for the situation, including any important details or previous actions taken
                   </div>
                   <textarea
                     name={`${ps.id}_background`}
                     maxLength={4000}
-                    required
                     value={formData[`${ps.id}_background`] || ""}
                     onChange={handleInputChange}
                   />
@@ -1282,14 +1441,13 @@ function ResidentialForm({ onClose }) {
                 </div>
 
                 <div className="text-field">
-                  <label className="required">Assessment:</label>
+                  <label>Assessment:</label>
                   <div className="instruction">
                     *State one's professional analysis and/or interpretation of the situation noting the potential impact and/or implications
                   </div>
                   <textarea
                     name={`${ps.id}_assessment`}
                     maxLength={4000}
-                    required
                     value={formData[`${ps.id}_assessment`] || ""}
                     onChange={handleInputChange}
                   />
@@ -1302,14 +1460,13 @@ function ResidentialForm({ onClose }) {
                 </div>
 
                 <div className="text-field">
-                  <label className="required">Recommendation:</label>
+                  <label>Recommendation:</label>
                   <div className="instruction">
                     *Note the proposal course of action and/or solution to address the situation based off the assessment
                   </div>
                   <textarea
                     name={`${ps.id}_recommendation`}
                     maxLength={4000}
-                    required
                     value={formData[`${ps.id}_recommendation`] || ""}
                     onChange={handleInputChange}
                   />
@@ -1325,15 +1482,24 @@ function ResidentialForm({ onClose }) {
           ))}
         </div>
 
-        {/* Submit */}
+        {/* Submit Section with Two Buttons */}
         <div className="submit-section">
+          <button 
+            type="button" 
+            className="btn-draft"
+            onClick={handleSaveAsDraft}
+          >
+            Save as Draft and Close Form
+          </button>
           <button type="submit" className="btn-submit">
-            Submit Assessment
+            Submit
           </button>
         </div>
       </form>
+      </>
+      )}
     </div>
   );
 }
 
-export default ResidentialForm;
+export default App;

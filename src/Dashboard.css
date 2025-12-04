@@ -8,24 +8,32 @@
   box-sizing: border-box;
 }
 
+html {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background: #f5f7fa;
   height: 100vh;
+  width: 100vw;
   overflow: hidden;
   color: #1f2937;
+  margin: 0;
+  padding: 0;
 }
 
 .dashboard-container {
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
   padding: 16px;
   height: 100vh;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-
 
 /* ============================================
    HEADER
@@ -103,12 +111,12 @@ body {
 }
 
 /* ============================================
-   ASSESSMENT CARDS - 3 IN A ROW
+   ASSESSMENT CARDS - VERTICAL LIST
    ============================================ */
 
 .assessment-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 10px;
   flex-shrink: 0;
 }
@@ -124,12 +132,16 @@ body {
   transition: all 0.2s ease;
   cursor: pointer;
   border: 1px solid #e5e7eb;
+  text-decoration: none;
+  color: inherit;
 }
 
 .assessment-card:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transform: translateY(-1px);
   border-color: #d1d5db;
+  text-decoration: none;
+  color: inherit;
 }
 
 .assessment-card-icon {
@@ -268,11 +280,14 @@ body {
   gap: 10px;
   margin-bottom: 12px;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .filter-search-wrapper {
   flex: 1;
   position: relative;
+  min-width: 250px;
 }
 
 .filter-search {
@@ -339,6 +354,34 @@ body {
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
+.clear-filters-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #ef4444;
+  color: white;
+  border: 1px solid #dc2626;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.clear-filters-button:hover {
+  background: #dc2626;
+  border-color: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+}
+
+.clear-filters-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.25);
+}
+
 /* ============================================
    TABLE - FITS ON PAGE
    ============================================ */
@@ -348,12 +391,51 @@ body {
   overflow-y: auto;
   flex: 1;
   min-height: 0;
+  /* Allow dropdowns to appear outside table bounds */
+  position: relative;
 }
 
 .assessment-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed; /* Ensures consistent column widths */
 }
+
+.assessment-table th:nth-child(1) { 
+  width: 20%; 
+  text-align: center;
+  padding-left: 8px;
+} /* Assessment ID */
+.assessment-table th:nth-child(2) { 
+  width: 12%; 
+  text-align: center;
+  padding-left: 8px;
+} /* Case ID */
+.assessment-table th:nth-child(3) { 
+  width: 15%; 
+  text-align: center;
+  padding-left: 8px;
+} /* Assessment Type */
+.assessment-table th:nth-child(4) { 
+  width: 12%; 
+  text-align: center;
+  padding-left: 8px;
+} /* Status */
+.assessment-table th:nth-child(5) { 
+  width: 15%; 
+  text-align: center;
+  padding-left: 8px;
+} /* Created On */
+.assessment-table th:nth-child(6) { 
+  width: 12%; 
+  text-align: center;
+  padding-left: 8px;
+} /* Created By */
+.assessment-table th:nth-child(7) { 
+  width: 14%; 
+  text-align: center;
+  padding-left: 8px;
+} /* Submitted On */
 
 .assessment-table thead {
   background: #f9fafb;
@@ -365,12 +447,114 @@ body {
 
 .assessment-table thead th {
   padding: 10px 14px;
-  text-align: left;
+  text-align: center;
   font-size: 12px;
   font-weight: 600;
   color: #374151;
   text-transform: uppercase;
   letter-spacing: 0.3px;
+  vertical-align: middle;
+  line-height: 1.2;
+}
+
+.assessment-table thead th span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  vertical-align: middle;
+}
+
+/* Table Header Dropdown Styles */
+.table-header-with-dropdown {
+  position: relative !important;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  cursor: pointer;
+  user-select: none;
+  padding: 0;
+  transition: background-color 0.2s ease;
+  margin: 0;
+}
+
+.header-content:hover {
+  background-color: #f9fafb;
+  border-radius: 4px;
+}
+
+.dropdown-arrow {
+  width: 14px;
+  height: 14px;
+  color: #6b7280;
+  transition: transform 0.2s ease;
+}
+
+.header-content:hover .dropdown-arrow {
+  color: #374151;
+}
+
+.column-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 9999;
+  max-height: 250px;
+  overflow-y: auto;
+  margin-top: 4px;
+  min-width: 200px;
+}
+
+.dropdown-search {
+  padding: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.dropdown-search-input {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.dropdown-search-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+.dropdown-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 400;
+  color: #374151;
+  text-transform: none;
+  letter-spacing: normal;
+  transition: background-color 0.2s ease;
+}
+
+.dropdown-option:hover {
+  background-color: #f3f4f6;
+}
+
+.dropdown-option:first-child {
+  border-radius: 6px 6px 0 0;
+}
+
+.dropdown-option:last-child {
+  border-radius: 0 0 6px 6px;
 }
 
 .assessment-table tbody tr {
@@ -390,6 +574,39 @@ body {
   padding: 10px 14px;
   font-size: 13px;
   color: #374151;
+  vertical-align: middle;
+  text-align: center;
+  padding-left: 8px;
+}
+
+.assessment-table tbody td:nth-child(2) {
+  text-align: center;
+  padding-left: 8px;
+}
+
+.assessment-table tbody td:nth-child(3) {
+  text-align: center;
+  padding-left: 8px;
+}
+
+.assessment-table tbody td:nth-child(4) {
+  text-align: center;
+  padding-left: 8px;
+}
+
+.assessment-table tbody td:nth-child(5) {
+  text-align: center;
+  padding-left: 8px;
+}
+
+.assessment-table tbody td:nth-child(6) {
+  text-align: center;
+  padding-left: 8px;
+}
+
+.assessment-table tbody td:nth-child(7) {
+  text-align: center;
+  padding-left: 8px;
 }
 
 /* ============================================
@@ -415,10 +632,13 @@ body {
 .status-badge {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   padding: 4px 10px;
   border-radius: 10px;
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
+  vertical-align: middle;
 }
 
 .status-completed {
@@ -661,9 +881,7 @@ body {
    ============================================ */
 
 @media (max-width: 1024px) {
-  .assessment-cards {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  /* Assessment cards already vertical - no changes needed */
 }
 
 @media (max-width: 768px) {
@@ -671,9 +889,7 @@ body {
     padding: 12px;
   }
 
-  .assessment-cards {
-    grid-template-columns: 1fr;
-  }
+  /* Assessment cards already vertical - no changes needed */
 
   .filters-row {
     flex-direction: column;
@@ -685,19 +901,247 @@ body {
   }
 }
 
-/* ============================================
-   UTILITY CLASSES
-   ============================================ */
-
-.section-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #111827;
-  margin-bottom: 12px;
+/* Pagination Styles - With Visible Arrows */
+.pagination-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  background: #fafafa;
 }
 
-.section-subtitle {
+.pagination-info {
   font-size: 13px;
   color: #6b7280;
-  margin-bottom: 10px;
+  font-weight: 400;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pagination-arrow {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #636F9E;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #636F9E;
+  padding: 0;
+}
+
+.pagination-arrow svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
+.pagination-arrow:hover:not(:disabled) {
+  background: #636F9E;
+  color: white;
+  transform: scale(1.05);
+}
+
+.pagination-arrow:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.pagination-arrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #9ca3af;
+}
+
+.pagination-page-display {
+  min-width: 90px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #374151;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Responsive pagination */
+@media (max-width: 768px) {
+  .pagination-wrapper {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .pagination-info {
+    order: 2;
+  }
+
+  .pagination-controls {
+    order: 1;
+  }
+}
+/* Add these new styles */
+.header-content-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.header-title-center {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinning {
+  animation: spin 0.6s linear infinite;
+}
+
+.refresh-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   DATE RANGE FILTER
+   ============================================ */
+
+.date-range-filter {
+  background: white;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+}
+
+.filter-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.filter-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+}
+
+.filter-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #3b82f6;
+  cursor: pointer;
+}
+
+.date-inputs {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.date-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.date-input-group label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  min-width: 40px;
+}
+
+.date-input {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #374151;
+  background: white;
+  min-width: 140px;
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.date-range-info {
+  font-size: 13px;
+  color: #059669;
+  background: #ecfdf5;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #a7f3d0;
+  font-weight: 500;
+}
+
+.clear-filters-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 12px;
+  align-self: flex-start;
+}
+
+.clear-filters-button:hover {
+  background: #fecaca;
+  border-color: #f87171;
+}
+
+@media (max-width: 768px) {
+  .date-inputs {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .date-input-group {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .date-input {
+    width: 100%;
+  }
 }

@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Save } from 'lucide-react';
 import './FAREQuestionnaire.css';
-//import { fareApi } from './services/fareApi';
-//import { fareApi } from './services/fareApi';
 
 const QUESTIONS = [
   {
@@ -772,9 +770,13 @@ const QUESTIONS = [
   }
 ];
 
-export default function FAREQuestionnaire({ onSave, draftData }) {
+export default function FAREQuestionnaire({ onSave, onClose, draftData }) {
+  // Generate Assessment ID immediately when form opens
+  const [assessmentId] = useState(() => draftData?.id || `FARE-${Date.now()}`);
+  
   const [formData, setFormData] = useState({});
   const [effectiveDate, setEffectiveDate] = useState('');
+  const [showSaveSuccessModal, setShowSaveSuccessModal] = useState(false);
   const [description, setDescription] = useState('');
   const [interviewEnded, setInterviewEnded] = useState(false);
   const [endedReason, setEndedReason] = useState('');
@@ -793,48 +795,200 @@ export default function FAREQuestionnaire({ onSave, draftData }) {
   const [dob, setDob] = useState('');
   const [caregiverName, setCaregiverName] = useState('');
   const [dateCompleted, setDateCompleted] = useState('');
-  //const [assessmentId, setAssessmentId] = useState(null);
-  const [assessmentId] = useState(`FARE-${Date.now()}`);
   const [isSaving, setIsSaving] = useState(false);
   const [showMissedQuestionsModal, setShowMissedQuestionsModal] = useState(false);
   const [missedQuestions, setMissedQuestions] = useState([]);
-  // Load draft data when component opens
-useEffect(() => {
-  console.log('=== FARE DRAFT DEBUG ===');
-  console.log('1. Full draftData:', draftData);
-  console.log('2. draftData.overview:', draftData?.overview);
-  console.log('3. draftData.overview.caseId:', draftData?.overview?.caseId);
-  
-  if (draftData) {
-    console.log('4. Setting caseId to:', draftData.overview?.caseId);
-    setCaseId(draftData.overview?.caseId || '');
-    setChildName(draftData.overview?.childName || '');
-    setDob(draftData.overview?.dob || '');
-    setCaregiverName(draftData.overview?.caregiverName || '');
-    setCaseWorkerName(draftData.overview?.caseWorkerName || '');
-    setDateCompleted(draftData.overview?.dateCompleted || '');
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState(null);
+  const [autoSaveStatus, setAutoSaveStatus] = useState('');
+  const autoSaveTimerRef = useRef(null);
+  const isAutoSavingRef = useRef(false);
+  const [showSaveConfirmModal, setShowSaveConfirmModal] = useState(false);
+  const [hasAnsweredQuestion, setHasAnsweredQuestion] = useState(false);
+
+  useEffect(() => {
+    // Add beforeunload event listener for conditional save/discard
+    const handleBeforeUnload = (event) => {
+      if (!hasAnsweredQuestion) {
+        // User hasn't answered any questions, discard the form
+        console.log('🗑️ FARE: Discarding form on unload - no questions answered');
+        const assessments = JSON.parse(localStorage.getItem('assessments') || '[]');
+        const filteredAssessments = assessments.filter(a => a.id !== assessmentId);
+        localStorage.setItem('assessments', JSON.stringify(filteredAssessments));
+        return;
+      }
+      
+      // User has answered questions, auto-save
+      if (hasAnsweredQuestion && !isCompleted && Object.keys(formData).length > 0) {
+        console.log('💾 FARE: Auto-saving before unload');
+        // Note: beforeunload handlers are limited, so we do sync localStorage save
+        const saveData = {
+          id: assessmentId,
+          caseId: caseId || 'N/A',
+          caseName: childName || 'N/A',
+          overview: { caseId, childName, dob, caregiverName, caseWorkerName, dateCompleted },
+          answers: formData,
+          status: 'In-progress',
+          savedAt: new Date().toISOString()
+        };
+        
+        try {
+          const assessments = JSON.parse(localStorage.getItem('assessments') || '[]');
+          const existingIndex = assessments.findIndex(a => a.id === assessmentId);
+          if (existingIndex >= 0) {
+            assessments[existingIndex] = saveData;
+          } else {
+            assessments.unshift(saveData);
+          }
+          localStorage.setItem('assessments', JSON.stringify(assessments));
+        } catch (error) {
+          console.error('Error saving before unload:', error);
+        }
+      }
+    };
     
-    if (draftData.answers) {
-      console.log('5. Loading answers:', draftData.answers);
-      setFormData(draftData.answers);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasAnsweredQuestion, formData, isCompleted, caseId, childName, dob, caregiverName, caseWorkerName, dateCompleted, assessmentId]);
+
+  useEffect(() => {
+    if (draftData) {
+      console.log('🔵 FARE: Loading draft data:', draftData);
+      
+      setCaseId(draftData.overview?.caseId || draftData.caseId || '');
+      setChildName(draftData.overview?.childName || '');
+      setDob(draftData.overview?.dob || '');
+      setCaregiverName(draftData.overview?.caregiverName || '');
+      setCaseWorkerName(draftData.overview?.caseWorkerName || '');
+      setDateCompleted(draftData.overview?.dateCompleted || '');
+      
+      if (draftData.status === 'Completed' || draftData.status === 'completed') {
+        setIsCompleted(true);
+      }
+      
+      // Handle both 'answers' field (from auto-save) and 'data.answers' field
+      const answersData = draftData.answers || draftData.data?.answers || {};
+      
+      if (answersData && Object.keys(answersData).length > 0) {
+        console.log('🔵 FARE: Loading answers:', answersData);
+        setFormData(answersData);
+        
+        // Check if user has answered questions in draft
+        const hasAnswers = Object.values(answersData).some(answer => {
+          if (answer && answer.responses && answer.responses.length > 0) return true;
+          if (answer && typeof answer === 'string' && answer.trim() !== '') return true;
+          return false;
+        });
+        if (hasAnswers) {
+          setHasAnsweredQuestion(true);
+        }
+        
+        const hasEndInterviewOption = QUESTIONS.some(question => {
+          const questionData = answersData[question.id];
+          if (questionData?.responses) {
+            return questionData.responses.some(response => {
+              const option = question.options.find(o => o.value === response);
+              return option?.endInterview;
+            });
+          }
+          return false;
+        });
+        
+        if (hasEndInterviewOption) {
+          setInterviewEnded(true);
+          QUESTIONS.forEach(question => {
+            const questionData = answersData[question.id];
+            if (questionData?.responses) {
+              questionData.responses.forEach(response => {
+                const option = question.options.find(o => o.value === response);
+                if (option?.endInterview) {
+                  setEndedReason(`Interview ended by rule: Question ${question.section} - Selected "${response}"`);
+                }
+              });
+            }
+          });
+        }
+      }
+      
+      if (draftData.savedAt) {
+        setLastSavedAt(new Date(draftData.savedAt));
+      }
     }
-  } else {
-    console.log('❌ No draftData received');
-  }
-}, [draftData]);
+  }, [draftData]);
+
+  useEffect(() => {
+    if (isCompleted) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    
+    // Auto-save immediately when formData changes (with 2-second debounce)
+    if (unsavedChanges && !isAutoSavingRef.current && Object.keys(formData).length > 0 && hasAnsweredQuestion) {
+      console.log('🟡 FARE: Scheduling immediate auto-save due to form changes');
+      autoSaveTimerRef.current = setTimeout(() => handleAutoSave(), 2000); // 2 seconds instead of 30
+    }
+    
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [unsavedChanges, formData, caseId, childName, dob, caregiverName, caseWorkerName, dateCompleted, isCompleted, hasAnsweredQuestion]);
+
+  const handleAutoSave = async () => {
+    if (isCompleted || isAutoSavingRef.current || !unsavedChanges || !hasAnsweredQuestion) return;
+    
+    isAutoSavingRef.current = true;
+    setAutoSaveStatus('saving');
+    console.log('🔵 FARE: Auto-saving form data:', formData);
+    
+    try {
+      const saveData = {
+        id: assessmentId,
+        caseId: caseId || 'N/A',
+        caseName: childName || 'N/A',
+        overview: { caseId, childName, dob, caregiverName, caseWorkerName, dateCompleted },
+        answers: formData,
+        status: 'In-progress',
+        savedAt: new Date().toISOString(),
+        autoSaved: true
+      };
+      
+      if (onSave) {
+        await onSave(saveData);
+        console.log('✅ FARE: Auto-save successful');
+      }
+      
+      setUnsavedChanges(false);
+      setLastSavedAt(new Date());
+      setAutoSaveStatus('saved');
+      setTimeout(() => setAutoSaveStatus(''), 3000);
+    } catch (error) {
+      console.error('❌ FARE: Auto-save error:', error);
+      setAutoSaveStatus('error');
+      setTimeout(() => setAutoSaveStatus(''), 5000);
+    } finally {
+      isAutoSavingRef.current = false;
+    }
+  };
+
+  const getTimeAgo = (date) => {
+    if (!date) return '';
+    const seconds = Math.floor((new Date() - date) / 1000);
+    if (seconds < 60) return 'just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hr ago`;
+    return `${Math.floor(seconds / 86400)} days ago`;
+  };
 
   const handleOptionChange = (questionId, value) => {
-    // Find the current question index
+    if (isCompleted) return;
     const currentQuestionIndex = QUESTIONS.findIndex(q => q.id === questionId);
-    
-    // Check if all previous questions have been answered (except if interview ended)
     if (!interviewEnded) {
       const unansweredQuestions = [];
       for (let i = 0; i < currentQuestionIndex; i++) {
         const prevQuestion = QUESTIONS[i];
         const prevQuestionData = formData[prevQuestion.id];
-        
-        // Check if this previous question has any responses
         if (!prevQuestionData || !prevQuestionData.responses || prevQuestionData.responses.length === 0) {
           unansweredQuestions.push({
             section: prevQuestion.section,
@@ -843,47 +997,27 @@ useEffect(() => {
           });
         }
       }
-      
-      // If there are unanswered questions, show modal and prevent selection
       if (unansweredQuestions.length > 0) {
         setMissedQuestions(unansweredQuestions);
         setShowMissedQuestionsModal(true);
-        return; // Prevent the selection
+        return;
       }
     }
-    
     const current = formData[questionId]?.responses || [];
-    
     const isExclusiveOption = value === 'No' || value === 'Not Applicable' || value.includes('Not Applicable');
-    const hasExclusiveOption = current.some(v => 
-      v === 'No' || v === 'Not Applicable' || v.includes('Not Applicable')
-    );
-    
+    const hasExclusiveOption = current.some(v => v === 'No' || v === 'Not Applicable' || v.includes('Not Applicable'));
     let updated;
-    
     if (isExclusiveOption) {
-      if (current.includes(value)) {
-        updated = [];
-      } else {
-        updated = [value];
-      }
+      updated = current.includes(value) ? [] : [value];
     } else {
       if (hasExclusiveOption) {
         updated = [value];
       } else {
-        if (current.includes(value)) {
-          updated = current.filter(v => v !== value);
-        } else {
-          updated = [...current, value];
-        }
+        updated = current.includes(value) ? current.filter(v => v !== value) : [...current, value];
       }
     }
-    
-    // Find the question and option to get pre-configured settings
     const question = QUESTIONS.find(q => q.id === questionId);
     const option = question?.options.find(o => o.value === value);
-    
-    // Use pre-configured settings from the question definition
     const optionSettings = option ? {
       endInterview: option.endInterview || false,
       potentialViolation: option.potentialViolation || false,
@@ -892,35 +1026,40 @@ useEffect(() => {
       allowInterviewerComment: option.allowInterviewerComment || false,
       requireInterviewerComment: option.requireInterviewerComment || false
     } : {};
-    
-    // *** FIX: Check if we're CHANGING FROM an endInterview option to a non-endInterview option ***
+    if (updated.length === 0) {
+      setFormData(prev => {
+        const newData = {...prev};
+        delete newData[questionId];
+        return newData;
+      });
+      if (questionId === 'clinical_exception' || questionId === 'child_refusal') {
+        setInterviewEnded(false);
+        setEndedReason('');
+      }
+      setProceedBlocked(prev => {
+        const newBlocked = {...prev};
+        delete newBlocked[questionId];
+        return newBlocked;
+      });
+      setUnsavedChanges(true);
+      return;
+    }
     const currentlyHasEndInterviewOption = current.some(val => {
       const opt = question?.options.find(o => o.value === val);
       return opt?.endInterview;
     });
-    
     const newWillHaveEndInterviewOption = updated.some(val => {
       const opt = question?.options.find(o => o.value === val);
       return opt?.endInterview;
     });
-    
-    // If we HAD an endInterview option selected, and NOW we DON'T (changing from Yes to No)
-    // We need to reset the interview state and KEEP questions locked for sequential answering
     if (currentlyHasEndInterviewOption && !newWillHaveEndInterviewOption && (questionId === 'clinical_exception' || questionId === 'child_refusal')) {
-      // Clear all responses EXCEPT Question 1 and Question 2
       const clearedData = {};
-      
-      // Keep Question 1 response if it exists and we're not currently editing it
       if (formData['clinical_exception'] && questionId !== 'clinical_exception') {
         clearedData['clinical_exception'] = formData['clinical_exception'];
       }
-      
-      // Keep Question 2 response if it exists and we're not currently editing it
       if (formData['child_refusal'] && questionId !== 'child_refusal') {
         clearedData['child_refusal'] = formData['child_refusal'];
       }
-      
-      // Add the current question's new response with the updated value
       if (updated.length > 0) {
         clearedData[questionId] = {
           responses: updated,
@@ -932,76 +1071,22 @@ useEffect(() => {
             }
           }
         };
-      } else {
-        // If unchecking everything, just set empty responses
-        clearedData[questionId] = {
-          responses: [],
-          options: {}
-        };
       }
-      
-      // Reset the form data
-      setFormData(clearedData);
-      
-      // Reset interview state
-      setInterviewEnded(false);
-      setEndedReason('');
-      
-      // Clear any proceed blocks
-      setProceedBlocked({});
-      
-      // Mark unsaved changes
-      setUnsavedChanges(true);
-      
-      return; // Exit early
-    }
-    
-    // *** FIX: Reset interview state when unchecking all options on Question 1 or 2 ***
-    if (updated.length === 0 && (questionId === 'clinical_exception' || questionId === 'child_refusal')) {
-      // Clear all responses after this question
-      const clearedData = {};
-      
-      // Keep Question 1 if we're working on Question 2
-      if (questionId === 'child_refusal' && formData['clinical_exception']) {
-        clearedData['clinical_exception'] = formData['clinical_exception'];
-      }
-      
-      // Keep Question 2 if we're working on Question 1
-      if (questionId === 'clinical_exception' && formData['child_refusal']) {
-        clearedData['child_refusal'] = formData['child_refusal'];
-      }
-      
-      // Set current question as empty
-      clearedData[questionId] = {
-        responses: [],
-        options: {}
-      };
-      
       setFormData(clearedData);
       setInterviewEnded(false);
       setEndedReason('');
       setProceedBlocked({});
       setUnsavedChanges(true);
-      
       return;
     }
-    
-    // Check if this option ends the interview and CLEAR ALL OTHER RESPONSES
     if (optionSettings.endInterview && !current.includes(value)) {
-      // PRESERVE Question 1 and Question 2 responses, CLEAR ALL OTHERS
       const clearedData = {};
-      
-      // Keep Question 1 response if it exists
       if (formData['clinical_exception']) {
         clearedData['clinical_exception'] = formData['clinical_exception'];
       }
-      
-      // Keep Question 2 response if it exists
       if (formData['child_refusal']) {
         clearedData['child_refusal'] = formData['child_refusal'];
       }
-      
-      // Add the current question's new response (will be either Q1 or Q2)
       clearedData[questionId] = {
         responses: [value],
         options: {
@@ -1012,58 +1097,30 @@ useEffect(() => {
           }
         }
       };
-      
-      // Replace ALL formData with only Questions 1, 2, and current
       setFormData(clearedData);
-      
-      // Clear any proceed blocks
       setProceedBlocked({});
-      
-      // End the interview immediately
       setInterviewEnded(true);
       setEndedReason(`Interview ended by rule: Question ${question.section} - Selected "${value}"`);
-      
-      // Mark unsaved changes
       setUnsavedChanges(true);
-      
-      // Show warning modal
-      setTimeout(() => {
-        setShowEndInterviewWarning(true);
-      }, 100);
-      
-      return; // Exit early since we're ending the interview
+      setTimeout(() => setShowEndInterviewWarning(true), 100);
+      return;
     }
-    
-    // Clear comments for deselected options
     const newOptions = {...(formData[questionId]?.options || {})};
-    
-    // If we're replacing with an exclusive option, clear all previous options' comments
     if (isExclusiveOption && !current.includes(value)) {
       current.forEach(oldValue => {
-        if (newOptions[oldValue]) {
-          delete newOptions[oldValue];
-        }
+        if (newOptions[oldValue]) delete newOptions[oldValue];
       });
     }
-    
-    // If we're removing an exclusive option to add regular options, clear the exclusive option's comments
     if (hasExclusiveOption && !isExclusiveOption) {
       current.forEach(oldValue => {
         if (oldValue === 'No' || oldValue === 'Not Applicable' || oldValue.includes('Not Applicable')) {
-          if (newOptions[oldValue]) {
-            delete newOptions[oldValue];
-          }
+          if (newOptions[oldValue]) delete newOptions[oldValue];
         }
       });
     }
-    
-    // If unchecking this option, remove its comments
     if (current.includes(value) && updated.length < current.length) {
-      if (newOptions[value]) {
-        delete newOptions[value];
-      }
+      if (newOptions[value]) delete newOptions[value];
     }
-    
     setFormData(prev => ({
       ...prev,
       [questionId]: {
@@ -1080,19 +1137,43 @@ useEffect(() => {
         }
       }
     }));
-
-    // Mark unsaved changes
-    setUnsavedChanges(true);
     
-    // Check if required comments will be needed
+    // Track that user has answered at least one question
+    if (updated.length > 0) {
+      const wasFirstAnswer = !hasAnsweredQuestion;
+      setHasAnsweredQuestion(true);
+      
+      // Save to dashboard when first question is answered
+      if (wasFirstAnswer && typeof onSave === 'function') {
+        console.log('🟢 FARE: Saving to dashboard - first question answered');
+        
+        const todayIso = new Date().toISOString().split('T')[0];
+        
+        // Update formData first, then save
+        setTimeout(() => {
+          const saveData = {
+            id: assessmentId,
+            caseId: caseId || "N/A",
+            status: "In-progress",
+            createdBy: "Current User",
+            overview: {
+              caseId: caseId || "N/A",
+              childName: childName || "",
+              caseWorkerName: caseWorkerName || "",
+              dateCompleted: todayIso
+            },
+            answers: formData,
+            autoSaved: true
+          };
+          
+          onSave(saveData);
+        }, 100);
+      }
+    }
+    
+    setUnsavedChanges(true);
     if (optionSettings.requireYouthComment || optionSettings.requireInterviewerComment) {
       setProceedBlocked(prev => ({...prev, [questionId]: true}));
-    } else if (updated.length === 0) {
-      setProceedBlocked(prev => {
-        const newBlocked = {...prev};
-        delete newBlocked[questionId];
-        return newBlocked;
-      });
     }
   };
 
@@ -1103,6 +1184,7 @@ useEffect(() => {
   };
 
   const handleCheckboxChange = (questionId, optionValue, field) => {
+    if (isCompleted) return;
     setFormData(prev => ({
       ...prev,
       [questionId]: {
@@ -1116,10 +1198,42 @@ useEffect(() => {
         }
       }
     }));
+    
+    // Track that user has interacted with the form
+    const wasFirstAnswer = !hasAnsweredQuestion;
+    setHasAnsweredQuestion(true);
+    
+    // Save to dashboard when first question is answered
+    if (wasFirstAnswer && typeof onSave === 'function') {
+      console.log('🟢 FARE: Saving to dashboard - first checkbox interaction');
+      
+      const todayIso = new Date().toISOString().split('T')[0];
+      
+      setTimeout(() => {
+        const saveData = {
+          id: assessmentId,
+          caseId: caseId || "N/A",
+          status: "In-progress",
+          createdBy: "Current User",
+          overview: {
+            caseId: caseId || "N/A",
+            childName: childName || "",
+            caseWorkerName: caseWorkerName || "",
+            dateCompleted: todayIso
+          },
+          answers: formData,
+          autoSaved: true
+        };
+        
+        onSave(saveData);
+      }, 100);
+    }
+    
     setUnsavedChanges(true);
   };
 
   const handleTextChange = (questionId, optionValue, field, value) => {
+    if (isCompleted) return;
     setFormData(prev => ({
       ...prev,
       [questionId]: {
@@ -1133,17 +1247,46 @@ useEffect(() => {
         }
       }
     }));
-    setUnsavedChanges(true);
     
-    // Clear validation error for this field
+    // Track that user has answered at least one question
+    if (value && value.trim() !== '') {
+      const wasFirstAnswer = !hasAnsweredQuestion;
+      setHasAnsweredQuestion(true);
+      
+      // Save to dashboard when first question is answered
+      if (wasFirstAnswer && typeof onSave === 'function') {
+        console.log('🟢 FARE: Saving to dashboard - first text answer provided');
+        
+        const todayIso = new Date().toISOString().split('T')[0];
+        
+        setTimeout(() => {
+          const saveData = {
+            id: assessmentId,
+            caseId: caseId || "N/A",
+            status: "In-progress",
+            createdBy: "Current User",
+            overview: {
+              caseId: caseId || "N/A",
+              childName: childName || "",
+              caseWorkerName: caseWorkerName || "",
+              dateCompleted: todayIso
+            },
+            answers: formData,
+            autoSaved: true
+          };
+          
+          onSave(saveData);
+        }, 100);
+      }
+    }
+    
+    setUnsavedChanges(true);
     setValidationErrors(prev => {
       const newErrors = {...prev};
       const errorKey = `${questionId}-${optionValue}-${field}`;
       delete newErrors[errorKey];
       return newErrors;
     });
-    
-    // Check if all required comments are now filled for this question
     setTimeout(() => {
       const errors = validateCurrentQuestion(questionId);
       if (errors.length === 0) {
@@ -1159,37 +1302,30 @@ useEffect(() => {
   const validateCurrentQuestion = (questionId) => {
     const errors = [];
     const questionData = formData[questionId];
-    
     if (questionData?.responses) {
       questionData.responses.forEach(response => {
         const optionData = questionData.options?.[response];
         if (optionData) {
-          // Check required youth comment
           if (optionData.requireYouthComment && !optionData.youthComment?.trim()) {
             errors.push(`Youth Comment is required for this selection`);
           }
-          
-          // Check required interviewer comment
           if (optionData.requireInterviewerComment && !optionData.interviewerComment?.trim()) {
             errors.push(`Interviewer Comment is required for this selection`);
           }
         }
       });
     }
-    
     return errors;
   };
 
   const validateForm = () => {
     const errors = {};
-    
     QUESTIONS.forEach(question => {
       const questionData = formData[question.id];
       if (questionData?.responses) {
         questionData.responses.forEach(response => {
           const optionData = questionData.options?.[response];
           if (optionData) {
-            // Check required youth comment
             if (optionData.requireYouthComment && !optionData.youthComment?.trim()) {
               errors[`${question.id}-${response}-youthComment`] = {
                 message: `Youth Comment is required for Question ${question.section}: ${response}`,
@@ -1197,8 +1333,6 @@ useEffect(() => {
                 section: question.section
               };
             }
-            
-            // Check required interviewer comment
             if (optionData.requireInterviewerComment && !optionData.interviewerComment?.trim()) {
               errors[`${question.id}-${response}-interviewerComment`] = {
                 message: `Interviewer Comment is required for Question ${question.section}: ${response}`,
@@ -1210,7 +1344,6 @@ useEffect(() => {
         });
       }
     });
-    
     return errors;
   };
 
@@ -1218,11 +1351,9 @@ useEffect(() => {
     const element = document.getElementById(`question-${questionId}`);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Add a highlight effect
       element.style.transition = 'all 0.3s ease';
       element.style.backgroundColor = '#FEF3C7';
       element.style.boxShadow = '0 0 0 4px #FCD34D';
-      
       setTimeout(() => {
         element.style.backgroundColor = '';
         element.style.boxShadow = '';
@@ -1232,19 +1363,14 @@ useEffect(() => {
 
   const handleValidationModalClose = () => {
     setShowValidationModal(false);
-    
-    // Scroll to the first question with errors
     const firstError = Object.values(validationErrors)[0];
     if (firstError && firstError.questionId) {
-      setTimeout(() => {
-        scrollToQuestion(firstError.questionId);
-      }, 300);
+      setTimeout(() => scrollToQuestion(firstError.questionId), 300);
     }
   };
 
   const checkForEndInterviewOptions = () => {
     let endInterviewInfo = null;
-    
     QUESTIONS.forEach(question => {
       const questionData = formData[question.id];
       if (questionData?.responses) {
@@ -1261,13 +1387,11 @@ useEffect(() => {
         });
       }
     });
-    
     return endInterviewInfo;
   };
 
   const getPotentialViolations = () => {
     const violations = [];
-    
     QUESTIONS.forEach(question => {
       const questionData = formData[question.id];
       if (questionData?.responses) {
@@ -1286,62 +1410,78 @@ useEffect(() => {
         });
       }
     });
-    
     return violations;
   };
 
-  const handleSaveDraft = async () => {
+  const handleSaveDraft = () => {
+    if (isCompleted) {
+      alert('This assessment is already completed and cannot be modified.');
+      return;
+    }
+    setShowSaveConfirmModal(true);
+  };
+
+  const handleSaveAndContinue = async () => {
+    setShowSaveConfirmModal(false);
     setIsSaving(true);
     try {
       const saveData = {
         id: assessmentId,
-        caseId,
-        childName,
-        dob,
-        caregiverName,
-        caseWorkerName,
-        dateCompleted,
-        status: 'draft',
-        formData,
-        interviewEnded,
-        endedReason: interviewEnded ? endedReason : null,
-        potentialViolations: getPotentialViolations()
+        caseId: caseId || 'N/A',
+        caseName: childName || 'N/A',
+        overview: { caseId, childName, dob, caregiverName, caseWorkerName, dateCompleted },
+        answers: formData,
+        status: 'In-progress',
+        savedAt: new Date().toISOString()
       };
-
-    //   const response = await fareApi.saveAssessment(saveData);
-      
-    //   if (!assessmentId) {
-    //     setAssessmentId(response.id);
-    //   }
-
-      alert('Draft saved successfully! You can continue editing later.');
       setUnsavedChanges(false);
-      // Send to dashboard
-if (onSave) {
-  onSave({
-    id: assessmentId,
-    caseId: caseId || 'N/A',
-    caseName: childName || 'N/A',
-    overview: {
-      caseId,
-      childName,
-      dob,
-      caregiverName,
-      caseWorkerName,
-      dateCompleted
-    },
-    answers: formData,
-    status: 'Draft',
-    savedAt: new Date().toISOString()
-  });
-}
-      
-      // Scroll to top before refresh
-      window.scrollTo(0, 0);
-      
-      // Refresh the page to reset the form
-      window.location.reload();
-      
+      if (onSave) await onSave(saveData);
+      setLastSavedAt(new Date());
+      setAutoSaveStatus('saved');
+      setTimeout(() => setAutoSaveStatus(''), 3000);
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      alert('Failed to save draft. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveAndExit = async () => {
+    setShowSaveConfirmModal(false);
+    
+    if (!hasAnsweredQuestion) {
+      // User hasn't answered any questions, discard the form
+      console.log('🗑️ FARE: Discarding form - no questions answered');
+      const assessments = JSON.parse(localStorage.getItem('assessments') || '[]');
+      const filteredAssessments = assessments.filter(a => a.id !== assessmentId);
+      localStorage.setItem('assessments', JSON.stringify(filteredAssessments));
+      if (onClose) {
+        onClose();
+      } else {
+        window.location.href = '/AE_Dashboard/';
+      }
+      return;
+    }
+    
+    setIsSaving(true);
+    try {
+      const saveData = {
+        id: assessmentId,
+        caseId: caseId || 'N/A',
+        caseName: childName || 'N/A',
+        overview: { caseId, childName, dob, caregiverName, caseWorkerName, dateCompleted },
+        answers: formData,
+        status: 'In-progress',
+        savedAt: new Date().toISOString()
+      };
+      setUnsavedChanges(false);
+      if (onSave) await onSave(saveData);
+      if (onClose) {
+        onClose();
+      } else {
+        window.location.href = '/AE_Dashboard/';
+      }
     } catch (error) {
       console.error('Error saving draft:', error);
       alert('Failed to save draft. Please try again.');
@@ -1351,128 +1491,61 @@ if (onSave) {
   };
 
   const handleFinalize = async () => {
-    // *** FIX: Add validation for empty responses ***
-    // Check if at least Question 1 is answered
+    if (isCompleted) {
+      alert('This assessment is already completed and cannot be modified.');
+      return;
+    }
     if (!formData['clinical_exception']?.responses || formData['clinical_exception'].responses.length === 0) {
       alert('Please answer Question 1 before submitting.');
       scrollToQuestion('clinical_exception');
       return;
     }
-    
-    // If interview NOT ended, check if Question 2 is answered
     if (!interviewEnded) {
       if (!formData['child_refusal']?.responses || formData['child_refusal'].responses.length === 0) {
         alert('Please answer Question 2 before submitting.');
         scrollToQuestion('child_refusal');
         return;
       }
-      
-      // Check if all required questions have responses
       const unansweredRequired = [];
       QUESTIONS.forEach(q => {
         if (!formData[q.id]?.responses || formData[q.id].responses.length === 0) {
-          unansweredRequired.push({
-            section: q.section,
-            text: q.text
-          });
+          unansweredRequired.push({ section: q.section, text: q.text });
         }
       });
-      
       if (unansweredRequired.length > 0) {
         alert(`Please answer all questions before submitting. Missing ${unansweredRequired.length} question(s).`);
-        scrollToQuestion(QUESTIONS.find(q => 
-          !formData[q.id]?.responses || formData[q.id].responses.length === 0
-        )?.id);
+        scrollToQuestion(QUESTIONS.find(q => !formData[q.id]?.responses || formData[q.id].responses.length === 0)?.id);
         return;
       }
     }
-    
     const errors = validateForm();
-    
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       setShowValidationModal(true);
       return;
     }
-    
+
+    // Submit directly without confirmation modal
     const endInterviewInfo = checkForEndInterviewOptions();
-    
     if (endInterviewInfo && !interviewEnded) {
-      const confirmed = window.confirm(
-        `This assessment contains a response that will end the interview:\n\n` +
-        `Question ${endInterviewInfo.questionSection}: ${endInterviewInfo.questionText}\n` +
-        `Selected: ${endInterviewInfo.response}\n\n` +
-        `Do you want to finalize this assessment as an ended interview?`
-      );
-      
-      if (!confirmed) {
-        return;
-      }
-      
       setInterviewEnded(true);
-      setEndedReason(
-        `Interview ended by rule: Question ${endInterviewInfo.questionSection} - Selected "${endInterviewInfo.response}"`
-      );
+      setEndedReason(`Interview ended by rule: Question ${endInterviewInfo.questionSection} - Selected "${endInterviewInfo.response}"`);
     }
     
     setIsSaving(true);
     try {
       const saveData = {
         id: assessmentId,
-        caseId,
-        childName,
-        dob,
-        caregiverName,
-        caseWorkerName,
-        dateCompleted,
-        status: endInterviewInfo ? 'ended' : 'completed',
-        formData,
-        interviewEnded: endInterviewInfo ? true : interviewEnded,
-        endedReason: endInterviewInfo 
-          ? `Interview ended by rule: Question ${endInterviewInfo.questionSection} - Selected "${endInterviewInfo.response}"`
-          : (interviewEnded ? endedReason : null),
-        potentialViolations: getPotentialViolations()
+        caseId: caseId || 'N/A',
+        caseName: childName || 'N/A',
+        overview: { caseId, childName, dob, caregiverName, caseWorkerName, dateCompleted },
+        answers: formData,
+        status: 'Completed',
+        savedAt: new Date().toISOString()
       };
-      
-      await fareApi.saveAssessment(saveData);
-      
-      alert(
-        `Assessment finalized successfully!\n` +
-        `Status: ${saveData.status}\n` +
-        `${saveData.status === 'ended' ? `Reason: ${saveData.endedReason}` : ''}`
-      );
       setUnsavedChanges(false);
-      // Send to dashboard
-if (onSave) {
-  onSave({
-    id: assessmentId,
-    caseId: caseId || 'N/A',
-    caseName: childName || 'N/A',
-    overview: {
-      caseId,
-      childName,
-      dob,
-      caregiverName,
-      caseWorkerName,
-      dateCompleted
-    },
-    answers: formData,
-    status: 'Completed',
-    savedAt: new Date().toISOString()
-  });
-}
-      
-      if (endInterviewInfo) {
-        setInterviewEnded(true);
-        setEndedReason(saveData.endedReason);
-      }
-      
-      // Scroll to top before refresh
-      window.scrollTo(0, 0);
-      
-      // Refresh the page to reset the form
-      window.location.reload();
-      
+      if (onSave) await onSave(saveData);
+      setIsCompleted(true);
     } catch (error) {
       console.error('Error finalizing assessment:', error);
       alert('Failed to finalize assessment. Please try again.');
@@ -1481,14 +1554,142 @@ if (onSave) {
     }
   };
 
-  const handleSave = () => {
-    handleSaveDraft();
+  const handleConfirmSubmit = async () => {
+    setShowSubmitConfirm(false);
+    const endInterviewInfo = checkForEndInterviewOptions();
+    if (endInterviewInfo && !interviewEnded) {
+      const confirmed = window.confirm(
+        `This assessment contains a response that will end the interview:\n\n` +
+        `Question ${endInterviewInfo.questionSection}: ${endInterviewInfo.questionText}\n` +
+        `Selected: ${endInterviewInfo.response}\n\n` +
+        `Do you want to finalize this assessment as an ended interview?`
+      );
+      if (!confirmed) return;
+      setInterviewEnded(true);
+      setEndedReason(`Interview ended by rule: Question ${endInterviewInfo.questionSection} - Selected "${endInterviewInfo.response}"`);
+    }
+    setIsSaving(true);
+    try {
+      const saveData = {
+        id: assessmentId,
+        caseId: caseId || 'N/A',
+        caseName: childName || 'N/A',
+        overview: { caseId, childName, dob, caregiverName, caseWorkerName, dateCompleted },
+        answers: formData,
+        status: 'Completed',
+        savedAt: new Date().toISOString()
+      };
+      setUnsavedChanges(false);
+      if (onSave) await onSave(saveData);
+      if (endInterviewInfo) {
+        setInterviewEnded(true);
+        setEndedReason(saveData.endedReason);
+      }
+      window.scrollTo(0, 0);
+      window.location.reload();
+    } catch (error) {
+      console.error('Error finalizing assessment:', error);
+      alert('Failed to finalize assessment. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
     <div className="fare-container">
       <div className="fare-wrapper">
-        {/* Header */}
+        {isCompleted && (
+          <div style={{
+            backgroundColor: '#EFF6FF',
+            border: '2px solid #3B82F6',
+            borderRadius: '8px',
+            padding: '16px 20px',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C6.48 0 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" fill="#3B82F6"/>
+            </svg>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '15px', fontWeight: '600', color: '#1E40AF', marginBottom: '4px' }}>
+                Assessment Completed - Read-Only Mode
+              </div>
+              <div style={{ fontSize: '13px', color: '#1E40AF' }}>
+                This assessment has been finalized and cannot be edited. You can view all responses below.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!isCompleted && (
+          <div style={{
+            backgroundColor: autoSaveStatus === 'error' ? '#FEE2E2' : '#F3F4F6',
+            border: `1px solid ${autoSaveStatus === 'error' ? '#FCA5A5' : '#D1D5DB'}`,
+            borderRadius: '6px',
+            padding: '10px 16px',
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: '13px',
+            color: '#374151'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {autoSaveStatus === 'saving' && (
+                <>
+                  <div style={{
+                    width: '14px',
+                    height: '14px',
+                    border: '2px solid #3B82F6',
+                    borderTopColor: 'transparent',
+                    borderRadius: '50%',
+                    animation: 'spin 0.6s linear infinite'
+                  }}></div>
+                  <span style={{ color: '#1F2937', fontWeight: '500' }}>Auto-saving...</span>
+                </>
+              )}
+              {autoSaveStatus === 'saved' && (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M13.5 4L6 11.5L2.5 8" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span style={{ color: '#059669', fontWeight: '500' }}>Draft saved</span>
+                </>
+              )}
+              {autoSaveStatus === 'error' && (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="8" cy="8" r="7" stroke="#DC2626" strokeWidth="2"/>
+                    <path d="M8 4V9M8 11V12" stroke="#DC2626" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  <span style={{ color: '#DC2626', fontWeight: '500' }}>Auto-save failed</span>
+                </>
+              )}
+              {!autoSaveStatus && lastSavedAt && (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M7 1C3.68629 1 1 3.68629 1 7C1 10.3137 3.68629 13 7 13C10.3137 13 13 10.3137 13 7C13 3.68629 10.3137 1 7 1Z" stroke="#6B7280" strokeWidth="1.5"/>
+                    <path d="M7 4V7L9 9" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                  <span style={{ color: '#6B7280' }}>Last saved: {getTimeAgo(lastSavedAt)}</span>
+                </>
+              )}
+              {!autoSaveStatus && !lastSavedAt && unsavedChanges && (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="8" cy="8" r="7" stroke="#F59E0B" strokeWidth="2"/>
+                    <path d="M8 4V8M8 10V11" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  <span style={{ color: '#F59E0B', fontWeight: '500' }}>Unsaved changes</span>
+                </>
+              )}
+            </div>
+            {/* <div style={{ fontSize: '12px', color: '#6B7280' }}>Auto-saves every 30 seconds</div> */}
+          </div>
+        )}
+
         <div className="fare-header">
           <div className="fare-header-top">
             <div className="fare-header-left">
@@ -1507,148 +1708,140 @@ if (onSave) {
           </div>
           
           <div style={{ display: 'flex', flexDirection: 'column', marginTop: '12px', gap: '0' }}>
-            {/* Row 1 (3 columns) */}
             <div className="fare-header-bottom" style={{ display: 'flex', gap: '24px', marginTop: '0' }}>
-              {/* Case ID */}
               <div className="fare-header-info" style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  <label style={{ fontSize: '13px', color: '#111827', fontWeight: '500', minWidth: '100px' }}>
-                    Case ID
-                  </label>
+                  <label style={{ fontSize: '13px', color: '#111827', fontWeight: '500', minWidth: '100px' }}>Case ID</label>
                   <input
                     type="text"
                     value={caseId}
-                    onChange={(e) => setCaseId(e.target.value)}
+                    onChange={(e) => !isCompleted && setCaseId(e.target.value)}
+                    disabled={isCompleted}
                     style={{
                       padding: '4px 8px',
                       border: '1px solid #d1d5db',
                       borderRadius: '4px',
                       fontSize: '13px',
                       color: '#111827',
-                      backgroundColor: 'white',
+                      backgroundColor: isCompleted ? '#f3f4f6' : 'white',
                       flex: 1,
+                      cursor: isCompleted ? 'not-allowed' : 'text'
                     }}
                     placeholder="Enter Case ID..."
                   />
                 </div>
               </div>
 
-              {/* Child Name */}
               <div className="fare-header-info" style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  <label style={{ fontSize: '13px', color: '#111827', fontWeight: '500', minWidth: '100px' }}>
-                    Child Name
-                  </label>
+                  <label style={{ fontSize: '13px', color: '#111827', fontWeight: '500', minWidth: '100px' }}>Child Name</label>
                   <input
                     type="text"
                     value={childName}
-                    onChange={(e) => setChildName(e.target.value)}
+                    onChange={(e) => !isCompleted && setChildName(e.target.value)}
+                    disabled={isCompleted}
                     style={{
                       padding: '4px 8px',
                       border: '1px solid #d1d5db',
                       borderRadius: '4px',
                       fontSize: '13px',
                       color: '#111827',
-                      backgroundColor: 'white',
+                      backgroundColor: isCompleted ? '#f3f4f6' : 'white',
                       flex: 1,
+                      cursor: isCompleted ? 'not-allowed' : 'text'
                     }}
                     placeholder="Enter Child Name..."
                   />
                 </div>
               </div>
 
-              {/* Date of Birth */}
               <div className="fare-header-info" style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  <label style={{ fontSize: '13px', color: '#111827', fontWeight: '500', minWidth: '100px' }}>
-                    Date of Birth
-                  </label>
+                  <label style={{ fontSize: '13px', color: '#111827', fontWeight: '500', minWidth: '100px' }}>Date of Birth</label>
                   <input
                     type="date"
                     value={dob}
-                    onChange={(e) => setDob(e.target.value)}
+                    onChange={(e) => !isCompleted && setDob(e.target.value)}
+                    disabled={isCompleted}
                     style={{
                       padding: '4px 8px',
                       border: '1px solid #d1d5db',
                       borderRadius: '4px',
                       fontSize: '13px',
                       color: '#111827',
-                      backgroundColor: 'white',
+                      backgroundColor: isCompleted ? '#f3f4f6' : 'white',
                       flex: 1,
+                      cursor: isCompleted ? 'not-allowed' : 'text'
                     }}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Row 2 (3 columns) */}
             <div className="fare-header-bottom" style={{ display: 'flex', gap: '24px', marginTop: '0' }}>
-              {/* Caregiver's Name */}
               <div className="fare-header-info" style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  <label style={{ fontSize: '13px', color: '#111827', fontWeight: '500', minWidth: '120px' }}>
-                    Caregiver's Name
-                  </label>
+                  <label style={{ fontSize: '13px', color: '#111827', fontWeight: '500', minWidth: '120px' }}>Caregiver's Name</label>
                   <input
                     type="text"
                     value={caregiverName}
-                    onChange={(e) => setCaregiverName(e.target.value)}
+                    onChange={(e) => !isCompleted && setCaregiverName(e.target.value)}
+                    disabled={isCompleted}
                     style={{
                       padding: '4px 8px',
                       border: '1px solid #d1d5db',
                       borderRadius: '4px',
                       fontSize: '13px',
                       color: '#111827',
-                      backgroundColor: 'white',
+                      backgroundColor: isCompleted ? '#f3f4f6' : 'white',
                       flex: 1,
+                      cursor: isCompleted ? 'not-allowed' : 'text'
                     }}
                     placeholder="Enter Caregiver Name..."
                   />
                 </div>
               </div>
 
-              {/* Case Worker's Name */}
               <div className="fare-header-info" style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  <label style={{ fontSize: '13px', color: '#111827', fontWeight: '500', minWidth: '120px' }}>
-                    Case Worker's Name
-                  </label>
+                  <label style={{ fontSize: '13px', color: '#111827', fontWeight: '500', minWidth: '120px' }}>Case Worker's Name</label>
                   <input
                     type="text"
                     value={caseWorkerName}
-                    onChange={(e) => setCaseWorkerName(e.target.value)}
+                    onChange={(e) => !isCompleted && setCaseWorkerName(e.target.value)}
+                    disabled={isCompleted}
                     style={{
                       padding: '4px 8px',
                       border: '1px solid #d1d5db',
                       borderRadius: '4px',
                       fontSize: '13px',
                       color: '#111827',
-                      backgroundColor: 'white',
+                      backgroundColor: isCompleted ? '#f3f4f6' : 'white',
                       flex: 1,
+                      cursor: isCompleted ? 'not-allowed' : 'text'
                     }}
                     placeholder="Enter Case Worker Name..."
                   />
                 </div>
               </div>
 
-              {/* Date Completed */}
               <div className="fare-header-info" style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  <label style={{ fontSize: '13px', color: '#111827', fontWeight: '500', minWidth: '100px' }}>
-                    Date Completed
-                  </label>
+                  <label style={{ fontSize: '13px', color: '#111827', fontWeight: '500', minWidth: '100px' }}>Date Completed</label>
                   <input
                     type="date"
                     value={dateCompleted}
-                    onChange={(e) => setDateCompleted(e.target.value)}
+                    onChange={(e) => !isCompleted && setDateCompleted(e.target.value)}
+                    disabled={isCompleted}
                     style={{
                       padding: '4px 8px',
                       border: '1px solid #d1d5db',
                       borderRadius: '4px',
                       fontSize: '13px',
                       color: '#111827',
-                      backgroundColor: 'white',
+                      backgroundColor: isCompleted ? '#f3f4f6' : 'white',
                       flex: 1,
+                      cursor: isCompleted ? 'not-allowed' : 'text'
                     }}
                   />
                 </div>
@@ -1656,7 +1849,6 @@ if (onSave) {
             </div>
           </div>
 
-          {/* Interview Ended Banner */}
           {interviewEnded && (
             <div style={{
               marginTop: '16px',
@@ -1673,18 +1865,14 @@ if (onSave) {
                 <path d="M12 9V13M12 16V17" stroke="white" strokeWidth="2" strokeLinecap="round"/>
               </svg>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#7F1D1D', marginBottom: '4px' }}>
-                  Interview Ended
-                </div>
-                <div style={{ fontSize: '13px', color: '#991B1B' }}>
-                  {endedReason}
-                </div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#7F1D1D', marginBottom: '4px' }}>Interview Ended</div>
+                <div style={{ fontSize: '13px', color: '#991B1B' }}>{endedReason}</div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Guide Information */}
+        {/* GUIDE SECTION */}
         <div className="guide-section">
           <h2 className="guide-title">GUIDE TO COMPLETING FOSTER CARE RATING AT EXIT INTERVIEW (F.A.R.E)</h2>
           
@@ -1925,489 +2113,654 @@ if (onSave) {
           </div>
         </div>
 
-        {/* Questions */}
-        {QUESTIONS.map((question, questionIndex) => {
-          const hasResponse = formData[question.id]?.responses?.length > 0;
-          
-          // Check if any previous question (not current) ended the interview
-          let interviewEndedAtIndex = -1;
-          if (interviewEnded) {
-            for (let i = 0; i < QUESTIONS.length; i++) {
-              const q = QUESTIONS[i];
-              const qData = formData[q.id];
-              if (qData?.responses) {
-                qData.responses.forEach(response => {
-                  const optionData = qData.options?.[response];
-                  if (optionData?.endInterview) {
-                    interviewEndedAtIndex = i;
-                  }
-                });
-              }
-            }
-          }
-          
-          // Disable all questions AFTER the one that ended the interview
-          // If Question 1 (index 0) ends interview, disable from Question 2 (index 1) onwards
-          const shouldDisable = interviewEnded && interviewEndedAtIndex >= 0 && questionIndex > interviewEndedAtIndex;
-          
-          // Check if previous questions are unanswered (for locking)
-          let isLocked = false;
-          let firstUnansweredSection = null;
-          if (!interviewEnded && questionIndex > 0) {
-            for (let i = 0; i < questionIndex; i++) {
-              const prevQuestion = QUESTIONS[i];
-              const prevQuestionData = formData[prevQuestion.id];
-              
-              if (!prevQuestionData || !prevQuestionData.responses || prevQuestionData.responses.length === 0) {
-                isLocked = true;
-                if (firstUnansweredSection === null) {
-                  firstUnansweredSection = prevQuestion.section;
-                }
-              }
-            }
-          }
-          
-          return (
-            <div 
-              key={question.id}
-              id={`question-${question.id}`}
-              className="question-card"
-              style={{
-                opacity: shouldDisable ? 0.6 : (isLocked ? 0.7 : 1),
-                pointerEvents: shouldDisable ? 'none' : 'auto',
-                position: 'relative',
-                border: isLocked ? '2px solid #FCD34D' : undefined,
-                backgroundColor: isLocked ? '#FFFBEB' : undefined
-              }}
-            >
-              {shouldDisable && (
-                <div style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: 'rgba(243, 244, 246, 0.5)',
-                  zIndex: 1,
-                  cursor: 'not-allowed'
-                }}></div>
-              )}
-              
-              {/* Section Header */}
-              <div className="section-header">
-                <div className="section-id-row">
-                  <div>
-                    <span className="section-id">{question.id}</span>
+{/* QUESTIONS */}
+{QUESTIONS.map((question, questionIndex) => {
+  const hasResponse = formData[question.id]?.responses?.length > 0;
+  let triggerQuestionId = null;
+  if (interviewEnded) {
+    for (const q of QUESTIONS) {
+      const qData = formData[q.id];
+      if (qData?.responses?.some(resp => {
+        const opt = q.options.find(o => o.value === resp);
+        return opt?.endInterview;
+      })) {
+        triggerQuestionId = q.id;
+        break;
+      }
+    }
+  }
+  const shouldDisable = isCompleted || (interviewEnded && question.id !== triggerQuestionId);
+  let isLocked = false;
+  if (!interviewEnded && questionIndex > 0 && !isCompleted) {
+    for (let i = 0; i < questionIndex; i++) {
+      const prevQuestion = QUESTIONS[i];
+      const prevQuestionData = formData[prevQuestion.id];
+      if (!prevQuestionData || !prevQuestionData.responses || prevQuestionData.responses.length === 0) {
+        isLocked = true;
+        break;
+      }
+    }
+  }
+  
+  return (
+    <div 
+      key={question.id}
+      id={`question-${question.id}`}
+      className="question-card"
+      style={{
+        opacity: shouldDisable ? 0.6 : (isLocked ? 0.7 : 1),
+        pointerEvents: shouldDisable ? 'none' : 'auto',
+        position: 'relative',
+        border: isLocked ? '2px solid #FCD34D' : undefined,
+        backgroundColor: isLocked ? '#FFFBEB' : undefined
+      }}
+    >
+      {shouldDisable && !isCompleted && (
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(243, 244, 246, 0.5)',
+          zIndex: 1,
+          cursor: 'not-allowed'
+        }}></div>
+      )}     
+      
+      <div className="section-header">
+        <div className="section-id-row">
+          <div><span className="section-id">{question.id}</span></div>
+        </div>
+      </div>
+
+      <div className="question-content">
+        <div className="question-text">
+          <span className="question-number">{question.section}. </span>
+          <span className="question-description">{question.text}</span>
+        </div>
+
+        <div className="options-container">
+          {question.options.map((option, idx) => {
+            const isSelected = formData[question.id]?.responses?.includes(option.value);
+            const optionData = formData[question.id]?.options?.[option.value] || option;
+            
+            return (
+              <div key={idx} className="option-item">
+                <div className="option-content">
+                  <div className="option-row">
+                    <span className="option-number">{idx + 1}.</span>
+                    <div className="option-label-wrapper">
+                      <label className="option-label" onClick={(e) => {
+                        e.preventDefault();
+                        if (!shouldDisable && !isCompleted) {
+                          handleOptionChange(question.id, option.value);
+                        }
+                      }}>
+                        <input
+                          type="checkbox"
+                          name={question.id}
+                          checked={isSelected}
+                          readOnly
+                          className="option-input"
+                          disabled={shouldDisable || isCompleted}
+                          style={{
+                            cursor: (shouldDisable || isCompleted) ? 'not-allowed' : 'pointer',
+                            pointerEvents: 'none'
+                          }}
+                        />
+                        <div className="option-text-content">
+                          <span className="option-text-label">{option.text}</span>
+                          <span className="option-value-label">{option.value}</span>
+                        </div>
+                      </label>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Question Content */}
-              <div className="question-content">
-                <div className="question-text">
-                  <span className="question-number">{question.section}. </span>
-                  <span className="question-description">{question.text}</span>
-                </div>
-
-                {/* Options */}
-                <div className="options-container">
-                  {question.options.map((option, idx) => {
-                    const isSelected = formData[question.id]?.responses?.includes(option.value);
-                    const optionData = formData[question.id]?.options?.[option.value] || option;
-                    
-                    return (
-                      <div key={idx} className="option-item">
-                        <div className="option-content">
-                          <div className="option-row">
-                            <span className="option-number">{idx + 1}.</span>
-                            <div className="option-label-wrapper">
-                              <label className="option-label">
-                                <input
-                                  type="checkbox"
-                                  name={question.id}
-                                  checked={isSelected}
-                                  onChange={() => handleOptionChange(question.id, option.value)}
-                                  className="option-input"
-                                  disabled={shouldDisable}
-                                  style={{
-                                    cursor: shouldDisable ? 'not-allowed' : 'pointer'
-                                  }}
-                                />
-                                <div className="option-text-content">
-                                  <span className="option-text-label">{option.text}</span>
-                                  <span className="option-value-label">{option.value}</span>
-                                </div>
-                              </label>
-                            </div>
-                          </div>
-
-                          {/* Comment Fields - Only show textareas when option is selected */}
-                          {isSelected && (
-                            <div className="checkboxes-section">
-                              {/* Warning for Potential Licensing Violation */}
-                              {optionData.potentialViolation && (
-                                <div className="violation-warning">
-                                  <svg
-                                    width="15"
-                                    height="15"
-                                    viewBox="0 0 20 20"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    style={{ flexShrink: 0 }}
-                                  >
-                                    <path
-                                      d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM11 15H9V13H11V15ZM11 11H9V5H11V11Z"
-                                      fill="#0f0f0fff"
-                                    />
-                                  </svg>
-                                  <div>
-                                    <strong> Warning: Potential Licensing Violation Detected</strong>
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {/* Youth Comment Field - shown when Allow or Require is checked */}
-                              {(optionData.allowYouthComment || optionData.requireYouthComment) && (
-                                <div className="textarea-wrapper" style={{marginTop: optionData.potentialViolation ? '16px' : '0'}}>
-                                  <label className="textarea-label">
-                                    Youth Comment
-                                    {optionData.requireYouthComment && 
-                                      <span className="required-asterisk">*</span>}
-                                  </label>
-                                  <textarea
-                                    value={optionData.youthComment || ''}
-                                    onChange={(e) => handleTextChange(question.id, option.value, 'youthComment', e.target.value)}
-                                    rows="3"
-                                    className="textarea-input"
-                                    placeholder="Youth's comments..."
-                                    required={optionData.requireYouthComment}
-                                    disabled={shouldDisable}
-                                    style={{
-                                      backgroundColor: shouldDisable ? '#f3f4f6' : 'white',
-                                      cursor: shouldDisable ? 'not-allowed' : 'text'
-                                    }}
-                                  />
-                                  {optionData.requireYouthComment && !optionData.youthComment?.trim() && !shouldDisable && (
-                                    <span className="field-required-note">This field is required before proceeding</span>
-                                  )}
-                                </div>
-                              )}
-
-                              {/* Interviewer Comment Field - shown when Allow or Require is checked */}
-                              {(optionData.allowInterviewerComment || optionData.requireInterviewerComment) && (
-                                <div className="textarea-wrapper" style={{marginTop: '16px'}}>
-                                  <label className="textarea-label">
-                                    Interviewer Comment
-                                    {optionData.requireInterviewerComment && 
-                                      <span className="required-asterisk">*</span>}
-                                  </label>
-                                  <textarea
-                                    value={optionData.interviewerComment || ''}
-                                    onChange={(e) => handleTextChange(question.id, option.value, 'interviewerComment', e.target.value)}
-                                    rows="3"
-                                    className="textarea-input"
-                                    placeholder="Interviewer's observations..."
-                                    required={optionData.requireInterviewerComment}
-                                    disabled={shouldDisable}
-                                    style={{
-                                      backgroundColor: shouldDisable ? '#f3f4f6' : 'white',
-                                      cursor: shouldDisable ? 'not-allowed' : 'text'
-                                    }}
-                                  />
-                                  {optionData.requireInterviewerComment && !optionData.interviewerComment?.trim() && !shouldDisable && (
-                                    <span className="field-required-note">This field is required before proceeding</span>
-                                  )}
-                                </div>
-                              )}
-                            </div>
+                  {isSelected && (
+                    <div className="checkboxes-section">
+                      {optionData.potentialViolation && (
+                        <div className="violation-warning">
+                          <svg width="15" height="15" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+                            <path d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM11 15H9V13H11V15ZM11 11H9V5H11V11Z" fill="#0f0f0fff"/>
+                          </svg>
+                          <div><strong> Warning: Potential Licensing Violation Detected</strong></div>
+                        </div>
+                      )}
+                      
+                      {(optionData.allowYouthComment || optionData.requireYouthComment) && (
+                        <div className="textarea-wrapper" style={{marginTop: optionData.potentialViolation ? '16px' : '0'}}>
+                          <label className="textarea-label">
+                            Youth Comment
+                            {optionData.requireYouthComment && <span className="required-asterisk">*</span>}
+                          </label>
+                          <textarea
+                            value={optionData.youthComment || ''}
+                            onChange={(e) => handleTextChange(question.id, option.value, 'youthComment', e.target.value)}
+                            rows="3"
+                            className="textarea-input"
+                            placeholder="Youth's comments..."
+                            required={optionData.requireYouthComment}
+                            disabled={shouldDisable || isCompleted}
+                            style={{
+                              backgroundColor: (shouldDisable || isCompleted) ? '#f3f4f6' : 'white',
+                              cursor: (shouldDisable || isCompleted) ? 'not-allowed' : 'text'
+                            }}
+                          />
+                          {optionData.requireYouthComment && !optionData.youthComment?.trim() && !shouldDisable && !isCompleted && (
+                            <span className="field-required-note">This field is required before proceeding</span>
                           )}
                         </div>
-                      </div>
-                    );
-                  })}
+                      )}
+
+                      {(optionData.allowInterviewerComment || optionData.requireInterviewerComment) && (
+                        <div className="textarea-wrapper" style={{marginTop: '16px'}}>
+                          <label className="textarea-label">
+                            Interviewer Comment
+                            {optionData.requireInterviewerComment && <span className="required-asterisk">*</span>}
+                          </label>
+                          <textarea
+                            value={optionData.interviewerComment || ''}
+                            onChange={(e) => handleTextChange(question.id, option.value, 'interviewerComment', e.target.value)}
+                            rows="3"
+                            className="textarea-input"
+                            placeholder="Interviewer's observations..."
+                            required={optionData.requireInterviewerComment}
+                            disabled={shouldDisable || isCompleted}
+                            style={{
+                              backgroundColor: (shouldDisable || isCompleted) ? '#f3f4f6' : 'white',
+                              cursor: (shouldDisable || isCompleted) ? 'not-allowed' : 'text'
+                            }}
+                          />
+                          {optionData.requireInterviewerComment && !optionData.interviewerComment?.trim() && !shouldDisable && !isCompleted && (
+                            <span className="field-required-note">This field is required before proceeding</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+})}
 
-        {/* Footer */}
         <div className="footer-buttons">
-          <button 
+          {/* <button 
             className="btn btn-cancel" 
             onClick={() => {
-              if (unsavedChanges) {
+              if (unsavedChanges && !isCompleted) {
                 setShowUnsavedWarning(true);
               } else {
-                window.location.reload();
+                window.location.href = '/Assessment-Dash-Board/';
               }
             }}
           >
-            Cancel
-          </button>
-          <button 
-            onClick={handleSaveDraft} 
-            className="btn btn-draft"
-            disabled={isSaving}
-          >
-            <Save size={20} />
-            {isSaving ? 'Saving...' : 'Save As Draft'}
-          </button>
-          <button 
-            onClick={handleFinalize} 
-            className="btn btn-save"
-            disabled={isSaving}
-          >
-            <Save size={20} />
-            {isSaving ? 'Submitting...' : 'Submit'}
-          </button>
+            {isCompleted ? 'Close' : 'Cancel'}
+          </button> */}
+          {!isCompleted && (
+            <>
+              <button onClick={handleSaveAndExit} className="btn btn-draft" disabled={isSaving}>
+                <Save size={20} />
+                {isSaving ? 'Saving...' : 'Save as draft and close form'}
+              </button>
+              <button onClick={handleFinalize} className="btn btn-save" disabled={isSaving}>
+                <Save size={20} />
+                {isSaving ? 'Submitting...' : 'Submit'}
+              </button>
+            </>
+          )}
         </div>
 
-        {/* Validation Modal */}
-        {showValidationModal && (
-          <div className="modal-overlay" onClick={handleValidationModalClose}>
-            <div className="modal-content modal-validation" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header-error">
-                <div className="modal-icon-circle-error">
-                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M16 2C8.268 2 2 8.268 2 16C2 23.732 8.268 30 16 30C23.732 30 30 23.732 30 16C30 8.268 23.732 2 16 2ZM17.5 23H14.5V20H17.5V23ZM17.5 17H14.5V9H17.5V17Z" fill="white"/>
-                  </svg>
+{/* MODALS */}
+{showSaveConfirmModal && (
+          <div className="modal-overlay" onClick={() => setShowSaveConfirmModal(false)}>
+            <div className="modal-content" style={{ maxWidth: '500px' }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid #E5E7EB' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Save size={24} color="#2563EB" />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#111827', margin: 0, marginBottom: '4px' }}>Save Draft</h3>
+                  <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>Choose what to do after saving</p>
                 </div>
               </div>
-              <h3 className="modal-title-error">Required Fields Missing</h3>
-              <p className="modal-description-center">
-                Please complete the following required fields before finalizing the assessment:
-              </p>
-              <div className="validation-error-box">
-                {Object.values(validationErrors).map((error, index) => (
-                  <div key={index} className="validation-error-item">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="8" cy="8" r="8" fill="#FEE2E2"/>
-                      <path d="M8 4V9M8 11V12" stroke="#DC2626" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
-                    <span>{error.message || error}</span>
+              
+              <div style={{ marginBottom: '24px' }}>
+                <p style={{ fontSize: '14px', color: '#374151', lineHeight: '1.6', margin: 0, marginBottom: '16px' }}>
+                  Your progress will be saved. Would you like to continue editing or return to the dashboard?
+                </p>
+                
+                <div style={{ backgroundColor: '#F3F4F6', border: '1px solid #D1D5DB', borderRadius: '8px', padding: '12px', display: 'flex', gap: '8px' }}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0, marginTop: '2px' }}>
+                    <path d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM11 15H9V13H11V15ZM11 11H9V5H11V11Z" fill="#6B7280"/>
+                  </svg>
+                  <div style={{ fontSize: '13px', color: '#374151', lineHeight: '1.5' }}>
+                    <strong>Note:</strong> Your form also auto-saves every 30 seconds, so your work is protected.
                   </div>
-                ))}
-              </div>
-              <div className="modal-actions-center">
-                <button 
-                  className="btn btn-modal-primary" 
-                  onClick={handleValidationModalClose}
-                >
-                  Complete Required Fields
-                </button>
-              </div>
-              <p className="modal-note-center">
-                💡 Tip: You can save as a draft and complete these fields later
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Unsaved Changes Warning Modal */}
-        {showUnsavedWarning && (
-          <div className="modal-overlay" onClick={() => setShowUnsavedWarning(false)}>
-            <div className="modal-content modal-warning" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header-warning">
-                <div className="modal-icon-circle-warning">
-                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M16 2C8.268 2 2 8.268 2 16C2 23.732 8.268 30 16 30C23.732 30 30 23.732 30 16C30 8.268 23.732 2 16 2ZM17.5 23H14.5V20H17.5V23ZM17.5 17H14.5V9H17.5V17Z" fill="white"/>
-                  </svg>
                 </div>
               </div>
-              <h3 className="modal-title-warning-new">Unsaved Changes</h3>
-              <p className="modal-description-center">
-                You have unsaved changes that will be lost if you cancel. Would you like to save your progress?
-              </p>
-              <div className="modal-actions-center">
-                <button 
-                  className="btn btn-modal-primary" 
-                  onClick={() => {
-                    setShowUnsavedWarning(false);
-                    handleSaveDraft();
-                  }}
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {/* <button 
+                  className="btn btn-modal-primary"
+                  onClick={handleSaveAndContinue}
+                  disabled={isSaving}
+                  style={{ width: '100%', backgroundColor: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                 >
-                  Save Draft
+                  {isSaving ? (
+                    <>
+                      <div style={{ width: '16px', height: '16px', border: '2px solid #ffffff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }}></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 3V13M8 3L4 7M8 3L12 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Save and Continue Editing
+                    </>
+                  )
+                  }
+                </button> */}
+                
+                <button 
+                  className="btn btn-modal-secondary"
+                  onClick={handleSaveAndExit}
+                  disabled={isSaving}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 14L2 14L2 2L6 2M11 11L14 8M14 8L11 5M14 8L6 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Save as Draft and Close Form
                 </button>
-                <button 
-                  className="btn btn-modal-secondary" 
-                  onClick={() => {
-                    setShowUnsavedWarning(false);
-                    window.location.reload();
-                  }}
-                >
-                  Discard Changes
-                </button>
-                <button 
-                  className="btn btn-modal-secondary" 
-                  onClick={() => setShowUnsavedWarning(false)}
-                >
-                  Continue Editing
+                
+                <button className="btn btn-modal-secondary" onClick={() => setShowSaveConfirmModal(false)} disabled={isSaving} style={{ width: '100%' }}>
+                  Cancel
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* End Interview Warning Modal */}
-        {showEndInterviewWarning && (
-          <div className="modal-overlay" onClick={() => setShowEndInterviewWarning(false)}>
-            <div className="modal-content modal-danger" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header-danger">
-                <div className="modal-icon-circle-danger">
-                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M16 2L2 28H30L16 2Z" fill="white"/>
-                    <path d="M16 12V18M16 21V22" stroke="#7F1D1D" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                </div>
-              </div>
-              <h3 className="modal-title-danger-new">Interview Ended</h3>
-              <p className="modal-description-center">
-                The interview has ended based on your selection. All other question responses (except Questions 1 and 2) have been cleared.
-                <strong style={{display: 'block', marginTop: '8px', color: '#DC2626'}}>
-                  Please complete any required comments for this question before finalizing.
-                </strong>
-              </p>
-              <div className="modal-warning-box">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 0C4.477 0 0 4.477 0 10C0 15.523 4.477 20 10 20C15.523 20 20 15.523 20 10C20 4.477 15.523 0 10 0ZM11 15H9V13H11V15ZM11 11H9V5H11V11Z" fill="#DC2626"/>
-                </svg>
-                <span>Questions 1 and 2 responses have been preserved.</span>
-              </div>
-              <div className="modal-actions-center">
-                <button 
-                  className="btn btn-modal-primary" 
-                  onClick={() => setShowEndInterviewWarning(false)}
-                >
-                  I Understand
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Missed Questions Modal */}
-        {showMissedQuestionsModal && (
-          <div className="modal-overlay" onClick={() => setShowMissedQuestionsModal(false)}>
-            <div className="modal-content modal-warning" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header-warning">
-                <div className="modal-icon-circle-warning">
-                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M16 2C8.268 2 2 8.268 2 16C2 23.732 8.268 30 16 30C23.732 30 30 23.732 30 16C30 8.268 23.732 2 16 2ZM17.5 23H14.5V20H17.5V23ZM17.5 17H14.5V9H17.5V17Z" fill="white"/>
-                  </svg>
-                </div>
-              </div>
-              <h3 className="modal-title-warning-new">Previous Questions Not Answered</h3>
-              <p className="modal-description-center">
-                You must answer questions in order. Please complete the following {missedQuestions.length === 1 ? 'question' : 'questions'} before proceeding:
-              </p>
-              <div style={{
-                maxHeight: '300px',
-                overflowY: 'auto',
-                margin: '16px 0',
-                padding: '0 8px'
-              }}>
-                {missedQuestions.map((q, index) => (
-                  <div 
-                    key={q.id}
-                    onClick={() => {
-                      setShowMissedQuestionsModal(false);
-                      setTimeout(() => {
-                        scrollToQuestion(q.id);
-                      }, 300);
-                    }}
-                    style={{
-                      backgroundColor: '#FEF3C7',
-                      border: '1px solid #FCD34D',
-                      borderRadius: '8px',
-                      padding: '12px 16px',
-                      marginBottom: '12px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      display: 'flex',
-                      gap: '12px',
-                      alignItems: 'flex-start'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#FDE68A';
-                      e.currentTarget.style.transform = 'translateX(4px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#FEF3C7';
-                      e.currentTarget.style.transform = 'translateX(0)';
-                    }}
-                  >
-                    <div style={{
-                      backgroundColor: '#F59E0B',
-                      color: 'white',
-                      borderRadius: '50%',
-                      width: '28px',
-                      height: '28px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      flexShrink: 0
-                    }}>
-                      {q.section}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        color: '#92400E',
-                        marginBottom: '4px'
-                      }}>
-                        Question {q.section}
-                      </div>
-                      <div style={{
-                        fontSize: '12px',
-                        color: '#78350F',
-                        lineHeight: '1.5'
-                      }}>
-                        {q.text}
-                      </div>
-                    </div>
-                    <svg 
-                      width="20" 
-                      height="20" 
-                      viewBox="0 0 20 20"
-fill="none" 
-                      xmlns="http://www.w3.org/2000/svg"
-                      style={{ flexShrink: 0, marginTop: '4px' }}
-                    >
-                      <path d="M7 3L13 10L7 17" stroke="#92400E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                ))}
-              </div>
-              <div className="modal-actions-center">
-                <button 
-                  className="btn btn-modal-primary" 
-                  onClick={() => {
-                    setShowMissedQuestionsModal(false);
-                    setTimeout(() => {
-                      scrollToQuestion(missedQuestions[0].id);
-                    }, 300);
-                  }}
-                >
-                  Go to Question {missedQuestions[0]?.section}
-                </button>
-                <button 
-                  className="btn btn-modal-secondary" 
-                  onClick={() => setShowMissedQuestionsModal(false)}
-                >
-                  Close
-                </button>
-              </div>
-              <p className="modal-note-center">
-                💡 Click any question above to jump directly to it
-              </p>
-            </div>
-          </div>
-        )}
+{showValidationModal && (
+  <div className="modal-overlay" onClick={handleValidationModalClose}>
+    <div className="modal-content modal-validation" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-header-error">
+        <div className="modal-icon-circle-error">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 2C8.268 2 2 8.268 2 16C2 23.732 8.268 30 16 30C23.732 30 30 23.732 30 16C30 8.268 23.732 2 16 2ZM17.5 23H14.5V20H17.5V23ZM17.5 17H14.5V9H17.5V17Z" fill="white"/>
+          </svg>
+        </div>
       </div>
+      <h3 className="modal-title-error">Required Fields Missing</h3>
+      <p className="modal-description-center">
+        Please complete the following required fields before finalizing the assessment:
+      </p>
+      <div className="validation-error-box">
+        {Object.values(validationErrors).map((error, index) => (
+          <div key={index} className="validation-error-item">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="8" cy="8" r="8" fill="#FEE2E2"/>
+              <path d="M8 4V9M8 11V12" stroke="#DC2626" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            <span>{error.message || error}</span>
+          </div>
+        ))}
+      </div>
+      <div className="modal-actions-center">
+        <button 
+          className="btn btn-modal-primary" 
+          onClick={handleValidationModalClose}
+        >
+          Complete Required Fields
+        </button>
+      </div>
+      <p className="modal-note-center">
+        💡 Tip: You can save as a draft and complete these fields later
+      </p>
+    </div>
+  </div>
+)}
+
+{showUnsavedWarning && (
+  <div className="modal-overlay" onClick={() => setShowUnsavedWarning(false)}>
+    <div className="modal-content modal-warning" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-header-warning">
+        <div className="modal-icon-circle-warning">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 2C8.268 2 2 8.268 2 16C2 23.732 8.268 30 16 30C23.732 30 30 23.732 30 16C30 8.268 23.732 2 16 2ZM17.5 23H14.5V20H17.5V23ZM17.5 17H14.5V9H17.5V17Z" fill="white"/>
+          </svg>
+        </div>
+      </div>
+      <h3 className="modal-title-warning-new">Unsaved Changes</h3>
+      <p className="modal-description-center">
+        You have unsaved changes that will be lost if you cancel. Would you like to save your progress?
+      </p>
+      <div className="modal-actions-center">
+        <button 
+          className="btn btn-modal-primary" 
+          onClick={() => {
+            setShowUnsavedWarning(false);
+            handleSaveDraft();
+          }}
+        >
+          Save Draft
+        </button>
+        <button 
+          className="btn btn-modal-secondary" 
+          onClick={() => {
+            setShowUnsavedWarning(false);
+            window.location.href = '/Assessment-Dash-Board/';
+          }}
+        >
+          Discard Changes
+        </button>
+        <button 
+          className="btn btn-modal-secondary" 
+          onClick={() => setShowUnsavedWarning(false)}
+        >
+          Continue Editing
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{showEndInterviewWarning && (
+  <div className="modal-overlay" onClick={() => setShowEndInterviewWarning(false)}>
+    <div className="modal-content modal-danger" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-header-danger">
+        <div className="modal-icon-circle-danger">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 2L2 28H30L16 2Z" fill="white"/>
+            <path d="M16 12V18M16 21V22" stroke="#7F1D1D" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        </div>
+      </div>
+      <h3 className="modal-title-danger-new">Interview Ended</h3>
+      <p className="modal-description-center">
+        The interview has ended based on your selection. All other question responses (except Questions 1 and 2) have been cleared.
+        <strong style={{display: 'block', marginTop: '8px', color: '#DC2626'}}>
+          Please complete any required comments for this question before finalizing.
+        </strong>
+      </p>
+      <div className="modal-warning-box">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 0C4.477 0 0 4.477 0 10C0 15.523 4.477 20 10 20C15.523 20 20 15.523 20 10C20 4.477 15.523 0 10 0ZM11 15H9V13H11V15ZM11 11H9V5H11V11Z" fill="#DC2626"/>
+        </svg>
+        <span>Responses have been preserved.</span>
+      </div>
+      <div className="modal-actions-center">
+        <button 
+          className="btn btn-modal-primary" 
+          onClick={() => setShowEndInterviewWarning(false)}
+        >
+          I Understand
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{showMissedQuestionsModal && (
+  <div className="modal-overlay" onClick={() => setShowMissedQuestionsModal(false)}>
+    <div className="modal-content modal-warning" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-header-warning">
+        <div className="modal-icon-circle-warning">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 2C8.268 2 2 8.268 2 16C2 23.732 8.268 30 16 30C23.732 30 30 23.732 30 16C30 8.268 23.732 2 16 2ZM17.5 23H14.5V20H17.5V23ZM17.5 17H14.5V9H17.5V17Z" fill="white"/>
+          </svg>
+        </div>
+      </div>
+      <h3 className="modal-title-warning-new">Previous Questions Not Answered</h3>
+      <p className="modal-description-center">
+        You must answer questions in order. Please complete the following {missedQuestions.length === 1 ? 'question' : 'questions'} before proceeding:
+      </p>
+      <div style={{
+        maxHeight: '300px',
+        overflowY: 'auto',
+        margin: '16px 0',
+        padding: '0 8px'
+      }}>
+        {missedQuestions.map((q, index) => (
+          <div 
+            key={q.id}
+            onClick={() => {
+              setShowMissedQuestionsModal(false);
+              setTimeout(() => {
+                scrollToQuestion(q.id);
+              }, 300);
+            }}
+            style={{
+              backgroundColor: '#FEF3C7',
+              border: '1px solid #FCD34D',
+              borderRadius: '8px',
+              padding: '12px 16px',
+              marginBottom: '12px',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              display: 'flex',
+              gap: '12px',
+              alignItems: 'flex-start'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#FDE68A';
+              e.currentTarget.style.transform = 'translateX(4px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#FEF3C7';
+              e.currentTarget.style.transform = 'translateX(0)';
+            }}
+          >
+            <div style={{
+              backgroundColor: '#F59E0B',
+              color: 'white',
+              borderRadius: '50%',
+              width: '28px',
+              height: '28px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '14px',
+              fontWeight: '600',
+              flexShrink: 0
+            }}>
+              {q.section}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{
+                fontSize: '13px',
+                fontWeight: '600',
+                color: '#92400E',
+                marginBottom: '4px'
+              }}>
+                Question {q.section}
+              </div>
+              <div style={{
+                fontSize: '12px',
+                color: '#78350F',
+                lineHeight: '1.5'
+              }}>
+                {q.text}
+              </div>
+            </div>
+            <svg 
+              width="20" 
+              height="20" 
+              viewBox="0 0 20 20"
+              fill="none" 
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ flexShrink: 0, marginTop: '4px' }}
+            >
+              <path d="M7 3L13 10L7 17" stroke="#92400E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+        ))}
+      </div>
+      <div className="modal-actions-center">
+        <button 
+          className="btn btn-modal-primary" 
+          onClick={() => {
+            setShowMissedQuestionsModal(false);
+            setTimeout(() => {
+              scrollToQuestion(missedQuestions[0].id);
+            }, 300);
+          }}
+        >
+          Go to Question {missedQuestions[0]?.section}
+        </button>
+        <button 
+          className="btn btn-modal-secondary" 
+          onClick={() => setShowMissedQuestionsModal(false)}
+        >
+          Close
+        </button>
+      </div>
+      <p className="modal-note-center">
+        💡 Click any question above to jump directly to it
+      </p>
+    </div>
+  </div>
+)}
+
+{showSubmitConfirm && (
+  <div className="modal-overlay" onClick={() => setShowSubmitConfirm(false)}>
+    <div className="modal-content" style={{ maxWidth: '500px' }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '12px', 
+        marginBottom: '16px',
+        paddingBottom: '16px',
+        borderBottom: '1px solid #E5E7EB'
+      }}>
+        <div style={{
+          width: '48px',
+          height: '48px',
+          borderRadius: '50%',
+          backgroundColor: '#DBEAFE',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0
+        }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <h3 style={{ 
+            fontSize: '18px', 
+            fontWeight: '700', 
+            color: '#111827',
+            margin: 0,
+            marginBottom: '4px'
+          }}>
+            Confirm Submission
+          </h3>
+          <p style={{ 
+            fontSize: '14px', 
+            color: '#6B7280',
+            margin: 0
+          }}>
+            Review before finalizing
+          </p>
+        </div>
+      </div>
+      
+      <div style={{ marginBottom: '24px' }}>
+        <p style={{ 
+          fontSize: '14px', 
+          color: '#374151', 
+          lineHeight: '1.6',
+          margin: 0,
+          marginBottom: '16px'
+        }}>
+          Are you sure you want to submit this FARE assessment? This action will finalize the assessment and it cannot be edited afterward.
+        </p>
+        
+        <div style={{
+          backgroundColor: '#FEF3C7',
+          border: '1px solid #FCD34D',
+          borderRadius: '8px',
+          padding: '12px',
+          display: 'flex',
+          gap: '8px'
+        }}>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0, marginTop: '2px' }}>
+            <path d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM11 15H9V13H11V15ZM11 11H9V5H11V11Z" fill="#F59E0B"/>
+          </svg>
+          <div style={{ fontSize: '13px', color: '#92400E', lineHeight: '1.5' }}>
+            <strong>Important:</strong> Once submitted, this assessment will be marked as completed and become read-only. Make sure all information is accurate.
+          </div>
+        </div>
+      </div>
+      
+      <div style={{ 
+        display: 'flex', 
+        gap: '12px',
+        justifyContent: 'flex-end'
+      }}>
+        <button 
+          className="btn btn-modal-secondary"
+          onClick={() => setShowSubmitConfirm(false)}
+          disabled={isSaving}
+          style={{ minWidth: '120px' }}
+        >
+          Cancel
+        </button>
+        <button 
+          className="btn btn-modal-primary"
+          onClick={handleConfirmSubmit}
+          disabled={isSaving}
+          style={{ 
+            minWidth: '120px',
+            backgroundColor: '#2563EB',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px'
+          }}
+        >
+          {isSaving ? (
+            <>
+              <div style={{
+                width: '16px',
+                height: '16px',
+                border: '2px solid #ffffff',
+                borderTopColor: 'transparent',
+                borderRadius: '50%',
+                animation: 'spin 0.6s linear infinite'
+              }}></div>
+              Submitting...
+            </>
+          ) : (
+            <>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M13 4L6 11L3 8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Yes, Submit
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+      </div>
+
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
