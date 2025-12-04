@@ -587,13 +587,17 @@ export default function AssessmentDashboard() {
       setActiveDropdown(null);
     } else {
       setActiveDropdown(column);
-      setFilterColumn(column);
+      // Don't automatically set filterColumn here - only set it when user actually selects a filter
       setDropdownSearch('');
     }
   };
 
   // Handle filter selection from dropdown
   const handleFilterSelect = (value) => {
+    // Only set the filter column when user actually selects a value
+    if (activeDropdown) {
+      setFilterColumn(activeDropdown);
+    }
     setFilterValue(value);
     setActiveDropdown(null);
     setDropdownSearch('');

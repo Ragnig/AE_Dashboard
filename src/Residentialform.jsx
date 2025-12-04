@@ -667,6 +667,11 @@ function App({ onClose, onSave, draftData }) {
     }
   }, [draftData]);
 
+  // Monitor isSubmitted state changes
+  useEffect(() => {
+    console.log("isSubmitted state changed to:", isSubmitted);
+  }, [isSubmitted]);
+
   const updateField = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
     
@@ -833,33 +838,62 @@ function App({ onClose, onSave, draftData }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    console.log("Submit button clicked - checking for errors...");
+    console.log("Score errors:", scoreErrors);
+    console.log("Date error:", dateError);
+
     const hasScoreError = Object.values(scoreErrors).some(Boolean);
     if (hasScoreError) {
+      console.log("Submission blocked by score errors");
       alert("Please fix score errors before submitting.");
       return;
     }
     if (dateError) {
+      console.log("Submission blocked by date errors");
       alert("Please fix date errors before submitting.");
       return;
     }
 
+    console.log("No validation errors, proceeding with submission...");
     console.log("Assessment Data:", formData);
+    
+    // Save as completed assessment
+    const saveData = {
+      id: assessmentId,
+      contract_number: formData.contract_number || 'N/A',
+      provider: formData.provider || 'N/A', 
+      date: formData.date || new Date().toISOString().split('T')[0],
+      status: 'Completed', // Set status to completed on submit
+      data: formData
+    };
+
+    console.log("Calling onSave with:", saveData);
+    if (onSave) {
+      onSave(saveData);
+    }
+    
+    console.log("About to set isSubmitted to true...");
     // Show success screen
     setIsSubmitted(true);
+    console.log("isSubmitted has been set to true");
     // Scroll to top to show the success message
     window.scrollTo(0, 0);
   };
 
   const handleReturnToDashboard = () => {
-    // TODO: Later implement navigation to dashboard
     console.log("Returning to dashboard...");
-    // For now, just reset the form
-    // When you have routing set up, you would navigate here
-    // Example: navigate('/dashboard') or window.location.href = '/dashboard'
+    
+    // Close the form and return to dashboard
+    if (onClose) {
+      onClose();
+    } else {
+      window.location.href = '/AE_Dashboard/';
+    }
   };
 
   return (
     <div className="container">
+      {console.log("Current isSubmitted state:", isSubmitted)} {/* Debug log */}
       {isSubmitted ? (
         // Success Screen
         <div className="success-screen">
