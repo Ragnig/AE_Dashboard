@@ -1075,20 +1075,7 @@ body {
   gap: 8px;
 }
 
-.datetime-input-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.datetime-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.date-input-group label,
-.datetime-input-group label {
+.date-input-group label {
   font-size: 14px;
   font-weight: 500;
   color: #374151;
@@ -1105,36 +1092,26 @@ body {
   min-width: 140px;
 }
 
-.time-input {
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 14px;
-  color: #374151;
-  background: white;
-  min-width: 80px;
-}
-
 .clear-date-filter {
   padding: 6px 10px;
-  background: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #fca5a5;
+  background: transparent;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
   border-radius: 4px;
   font-size: 16px;
-  font-weight: bold;
+  font-weight: normal;
   cursor: pointer;
   transition: all 0.2s ease;
   margin-left: 8px;
 }
 
 .clear-date-filter:hover {
-  background: #fecaca;
-  border-color: #f87171;
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #374151;
 }
 
-.date-input:focus,
-.time-input:focus {
+.date-input:focus {
   outline: none;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
@@ -1178,20 +1155,12 @@ body {
     align-items: stretch;
   }
   
-  .date-input-group,
-  .datetime-input-group {
+  .date-input-group {
     flex-direction: column;
     align-items: flex-start;
   }
   
-  .datetime-controls {
-    flex-direction: column;
-    gap: 8px;
-    align-items: stretch;
-  }
-  
-  .date-input,
-  .time-input {
+  .date-input {
     width: 100%;
   }
   

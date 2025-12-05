@@ -24,9 +24,7 @@ export default function AssessmentDashboard() {
   const [dateRangeFilter, setDateRangeFilter] = useState({
     enabled: false,
     startDate: '',
-    endDate: '',
-    startTime: '',
-    endTime: ''
+    endDate: ''
   });
  
   // Pagination states
@@ -200,9 +198,7 @@ export default function AssessmentDashboard() {
     setDateRangeFilter({
       enabled: false,
       startDate: '',
-      endDate: '',
-      startTime: '',
-      endTime: ''
+      endDate: ''
     });
    
     // Add a small delay to show the animation
@@ -480,34 +476,22 @@ export default function AssessmentDashboard() {
       (assessment.type || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (assessment.createdBy || '').toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Enhanced date range filter for all assessments (completed and in-progress)
+    // Date range filter for all assessments (completed and in-progress) - inclusive of both dates
     let matchesDateRange = true;
     if (dateRangeFilter.enabled && (dateRangeFilter.startDate || dateRangeFilter.endDate)) {
       let startDateTime = null;
       let endDateTime = null;
       
-      // Parse start date/time
+      // Set start date/time (inclusive)
       if (dateRangeFilter.startDate) {
         startDateTime = new Date(dateRangeFilter.startDate);
-        if (dateRangeFilter.startTime) {
-          const [hours, minutes] = dateRangeFilter.startTime.split(':');
-          startDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-        } else {
-          // If no start time specified, start from beginning of day
-          startDateTime.setHours(0, 0, 0, 0);
-        }
+        startDateTime.setHours(0, 0, 0, 0); // Beginning of start date
       }
       
-      // Parse end date/time
+      // Set end date/time (inclusive)
       if (dateRangeFilter.endDate) {
         endDateTime = new Date(dateRangeFilter.endDate);
-        if (dateRangeFilter.endTime) {
-          const [hours, minutes] = dateRangeFilter.endTime.split(':');
-          endDateTime.setHours(parseInt(hours), parseInt(minutes), 59, 999);
-        } else {
-          // If no end time specified, end at end of day
-          endDateTime.setHours(23, 59, 59, 999);
-        }
+        endDateTime.setHours(23, 59, 59, 999); // End of end date
       }
       
       // Check both created and submitted dates for all assessments
@@ -516,20 +500,42 @@ export default function AssessmentDashboard() {
       // Parse created date
       const createdDate = new Date(assessment.createdOn);
       if (!isNaN(createdDate.getTime())) {
-        let createdMatches = true;
-        if (startDateTime && createdDate < startDateTime) createdMatches = false;
-        if (endDateTime && createdDate > endDateTime) createdMatches = false;
-        if (createdMatches) assessmentMatches = true;
+        let createdInRange = true;
+        
+        // Check if created date is after start date (if provided)
+        if (startDateTime && createdDate < startDateTime) {
+          createdInRange = false;
+        }
+        
+        // Check if created date is before end date (if provided)  
+        if (endDateTime && createdDate > endDateTime) {
+          createdInRange = false;
+        }
+        
+        if (createdInRange) {
+          assessmentMatches = true;
+        }
       }
       
       // Parse submitted date (for completed assessments)
       if (assessment.submittedOn && assessment.submittedOn !== '-') {
         const submittedDate = new Date(assessment.submittedOn);
         if (!isNaN(submittedDate.getTime())) {
-          let submittedMatches = true;
-          if (startDateTime && submittedDate < startDateTime) submittedMatches = false;
-          if (endDateTime && submittedDate > endDateTime) submittedMatches = false;
-          if (submittedMatches) assessmentMatches = true;
+          let submittedInRange = true;
+          
+          // Check if submitted date is after start date (if provided)
+          if (startDateTime && submittedDate < startDateTime) {
+            submittedInRange = false;
+          }
+          
+          // Check if submitted date is before end date (if provided)
+          if (endDateTime && submittedDate > endDateTime) {
+            submittedInRange = false;
+          }
+          
+          if (submittedInRange) {
+            assessmentMatches = true;
+          }
         }
       }
       
@@ -619,9 +625,7 @@ export default function AssessmentDashboard() {
     setDateRangeFilter({
       enabled: false,
       startDate: '',
-      endDate: '',
-      startTime: '',
-      endTime: ''
+      endDate: ''
     });
   };
  
@@ -909,66 +913,40 @@ export default function AssessmentDashboard() {
             </button>
           </div>
 
-          {/* Enhanced Date Range Filter with Timestamp */}
+          {/* Date Range Filter */}
           <div className="date-range-filter">
             <div className="filter-section">
               <div className="date-inputs">
-                <div className="datetime-input-group">
+                <div className="date-input-group">
                   <label htmlFor="start-date">From:</label>
-                  <div className="datetime-controls">
-                    <input
-                      id="start-date"
-                      type="date"
-                      placeholder="mm/dd/yyyy"
-                      value={dateRangeFilter.startDate}
-                      onChange={(e) => setDateRangeFilter(prev => ({
-                        ...prev,
-                        startDate: e.target.value,
-                        enabled: e.target.value !== '' || prev.endDate !== '' || prev.startTime !== '' || prev.endTime !== ''
-                      }))}
-                      className="date-input"
-                    />
-                    <input
-                      type="time"
-                      placeholder="HH:MM"
-                      value={dateRangeFilter.startTime}
-                      onChange={(e) => setDateRangeFilter(prev => ({
-                        ...prev,
-                        startTime: e.target.value,
-                        enabled: prev.startDate !== '' || prev.endDate !== '' || e.target.value !== '' || prev.endTime !== ''
-                      }))}
-                      className="time-input"
-                    />
-                  </div>
+                  <input
+                    id="start-date"
+                    type="date"
+                    placeholder="mm/dd/yyyy"
+                    value={dateRangeFilter.startDate}
+                    onChange={(e) => setDateRangeFilter(prev => ({
+                      ...prev,
+                      startDate: e.target.value,
+                      enabled: e.target.value !== '' || prev.endDate !== ''
+                    }))}
+                    className="date-input"
+                  />
                 </div>
                 
-                <div className="datetime-input-group">
+                <div className="date-input-group">
                   <label htmlFor="end-date">To:</label>
-                  <div className="datetime-controls">
-                    <input
-                      id="end-date"
-                      type="date"
-                      placeholder="mm/dd/yyyy"
-                      value={dateRangeFilter.endDate}
-                      onChange={(e) => setDateRangeFilter(prev => ({
-                        ...prev,
-                        endDate: e.target.value,
-                        enabled: prev.startDate !== '' || e.target.value !== '' || prev.startTime !== '' || prev.endTime !== ''
-                      }))}
-                      className="date-input"
-                    />
-                    <input
-                      type="time"
-                      placeholder="HH:MM"
-                      value={dateRangeFilter.endTime}
-                      onChange={(e) => setDateRangeFilter(prev => ({
-                        ...prev,
-                        endTime: e.target.value,
-                        enabled: prev.startDate !== '' || prev.endDate !== '' || prev.startTime !== '' || e.target.value !== ''
-                      }))}
-                      className="time-input"
-                    />
-                  </div>
+                  <input
+                    id="end-date"
+                    type="date"
+                    placeholder="mm/dd/yyyy"
+                    value={dateRangeFilter.endDate}
+                    onChange={(e) => setDateRangeFilter(prev => ({
+                      ...prev,
+                      endDate: e.target.value,
+                      enabled: prev.startDate !== '' || e.target.value !== ''
+                    }))}
+                    className="date-input"
+                  />
                 </div>
                 
                 {(dateRangeFilter.enabled) && (
@@ -977,9 +955,7 @@ export default function AssessmentDashboard() {
                     onClick={() => setDateRangeFilter({
                       enabled: false,
                       startDate: '',
-                      endDate: '',
-                      startTime: '',
-                      endTime: ''
+                      endDate: ''
                     })}
                     title="Clear date range filter"
                   >
@@ -987,14 +963,6 @@ export default function AssessmentDashboard() {
                   </button>
                 )}
               </div>
-              
-              {dateRangeFilter.enabled && (
-                <div className="date-filter-info">
-                  <small style={{color: '#666', fontSize: '12px'}}>
-                    Showing assessments created or submitted within the selected time range
-                  </small>
-                </div>
-              )}
             </div>
           </div>
 
