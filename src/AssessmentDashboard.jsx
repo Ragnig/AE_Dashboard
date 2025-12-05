@@ -24,7 +24,9 @@ export default function AssessmentDashboard() {
   const [dateRangeFilter, setDateRangeFilter] = useState({
     enabled: false,
     startDate: '',
-    endDate: ''
+    endDate: '',
+    startTime: '',
+    endTime: ''
   });
  
   // Pagination states
@@ -198,7 +200,9 @@ export default function AssessmentDashboard() {
     setDateRangeFilter({
       enabled: false,
       startDate: '',
-      endDate: ''
+      endDate: '',
+      startTime: '',
+      endTime: ''
     });
    
     // Add a small delay to show the animation
@@ -476,32 +480,60 @@ export default function AssessmentDashboard() {
       (assessment.type || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (assessment.createdBy || '').toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Date range filter for all assessments (completed and in-progress)
+    // Enhanced date range filter for all assessments (completed and in-progress)
     let matchesDateRange = true;
-    if (dateRangeFilter.enabled && dateRangeFilter.startDate && dateRangeFilter.endDate) {
-      const startDate = new Date(dateRangeFilter.startDate);
-      const endDate = new Date(dateRangeFilter.endDate);
+    if (dateRangeFilter.enabled && (dateRangeFilter.startDate || dateRangeFilter.endDate)) {
+      let startDateTime = null;
+      let endDateTime = null;
       
-      // Set start date to beginning of day and end date to end of day for fully inclusive range
-      startDate.setHours(0, 0, 0, 0);
-      endDate.setHours(23, 59, 59, 999);
-      
-      let dateToCheck = null;
-      
-      // For completed assessments, prefer submitted date if available, otherwise use created date
-      if ((assessment.status || '').toLowerCase() === 'completed' && assessment.submittedOn && assessment.submittedOn !== '-') {
-        dateToCheck = new Date(assessment.submittedOn);
-      } else {
-        // For in-progress assessments or completed ones without submitted date, use created date
-        dateToCheck = new Date(assessment.createdOn);
+      // Parse start date/time
+      if (dateRangeFilter.startDate) {
+        startDateTime = new Date(dateRangeFilter.startDate);
+        if (dateRangeFilter.startTime) {
+          const [hours, minutes] = dateRangeFilter.startTime.split(':');
+          startDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        } else {
+          // If no start time specified, start from beginning of day
+          startDateTime.setHours(0, 0, 0, 0);
+        }
       }
       
-      // Handle invalid dates
-      if (isNaN(dateToCheck.getTime())) {
-        matchesDateRange = false;
-      } else {
-        matchesDateRange = dateToCheck >= startDate && dateToCheck <= endDate;
+      // Parse end date/time
+      if (dateRangeFilter.endDate) {
+        endDateTime = new Date(dateRangeFilter.endDate);
+        if (dateRangeFilter.endTime) {
+          const [hours, minutes] = dateRangeFilter.endTime.split(':');
+          endDateTime.setHours(parseInt(hours), parseInt(minutes), 59, 999);
+        } else {
+          // If no end time specified, end at end of day
+          endDateTime.setHours(23, 59, 59, 999);
+        }
       }
+      
+      // Check both created and submitted dates for all assessments
+      let assessmentMatches = false;
+      
+      // Parse created date
+      const createdDate = new Date(assessment.createdOn);
+      if (!isNaN(createdDate.getTime())) {
+        let createdMatches = true;
+        if (startDateTime && createdDate < startDateTime) createdMatches = false;
+        if (endDateTime && createdDate > endDateTime) createdMatches = false;
+        if (createdMatches) assessmentMatches = true;
+      }
+      
+      // Parse submitted date (for completed assessments)
+      if (assessment.submittedOn && assessment.submittedOn !== '-') {
+        const submittedDate = new Date(assessment.submittedOn);
+        if (!isNaN(submittedDate.getTime())) {
+          let submittedMatches = true;
+          if (startDateTime && submittedDate < startDateTime) submittedMatches = false;
+          if (endDateTime && submittedDate > endDateTime) submittedMatches = false;
+          if (submittedMatches) assessmentMatches = true;
+        }
+      }
+      
+      matchesDateRange = assessmentMatches;
     }
 
     // Column-based filtering
@@ -587,7 +619,9 @@ export default function AssessmentDashboard() {
     setDateRangeFilter({
       enabled: false,
       startDate: '',
-      endDate: ''
+      endDate: '',
+      startTime: '',
+      endTime: ''
     });
   };
  
@@ -875,41 +909,92 @@ export default function AssessmentDashboard() {
             </button>
           </div>
 
-          {/* Date Range Filter */}
+          {/* Enhanced Date Range Filter with Timestamp */}
           <div className="date-range-filter">
             <div className="filter-section">
               <div className="date-inputs">
-                <div className="date-input-group">
+                <div className="datetime-input-group">
                   <label htmlFor="start-date">From:</label>
-                  <input
-                    id="start-date"
-                    type="date"
-                    value={dateRangeFilter.startDate}
-                    onChange={(e) => setDateRangeFilter(prev => ({
-                      ...prev,
-                      startDate: e.target.value,
-                      enabled: e.target.value !== '' || prev.endDate !== ''
-                    }))}
-                    className="date-input"
-                  />
+                  <div className="datetime-controls">
+                    <input
+                      id="start-date"
+                      type="date"
+                      placeholder="mm/dd/yyyy"
+                      value={dateRangeFilter.startDate}
+                      onChange={(e) => setDateRangeFilter(prev => ({
+                        ...prev,
+                        startDate: e.target.value,
+                        enabled: e.target.value !== '' || prev.endDate !== '' || prev.startTime !== '' || prev.endTime !== ''
+                      }))}
+                      className="date-input"
+                    />
+                    <input
+                      type="time"
+                      placeholder="HH:MM"
+                      value={dateRangeFilter.startTime}
+                      onChange={(e) => setDateRangeFilter(prev => ({
+                        ...prev,
+                        startTime: e.target.value,
+                        enabled: prev.startDate !== '' || prev.endDate !== '' || e.target.value !== '' || prev.endTime !== ''
+                      }))}
+                      className="time-input"
+                    />
+                  </div>
                 </div>
                 
-                <div className="date-input-group">
+                <div className="datetime-input-group">
                   <label htmlFor="end-date">To:</label>
-                  <input
-                    id="end-date"
-                    type="date"
-                    value={dateRangeFilter.endDate}
-                    onChange={(e) => setDateRangeFilter(prev => ({
-                      ...prev,
-                      endDate: e.target.value,
-                      enabled: prev.startDate !== '' || e.target.value !== ''
-                    }))}
-                    className="date-input"
-                  />
+                  <div className="datetime-controls">
+                    <input
+                      id="end-date"
+                      type="date"
+                      placeholder="mm/dd/yyyy"
+                      value={dateRangeFilter.endDate}
+                      onChange={(e) => setDateRangeFilter(prev => ({
+                        ...prev,
+                        endDate: e.target.value,
+                        enabled: prev.startDate !== '' || e.target.value !== '' || prev.startTime !== '' || prev.endTime !== ''
+                      }))}
+                      className="date-input"
+                    />
+                    <input
+                      type="time"
+                      placeholder="HH:MM"
+                      value={dateRangeFilter.endTime}
+                      onChange={(e) => setDateRangeFilter(prev => ({
+                        ...prev,
+                        endTime: e.target.value,
+                        enabled: prev.startDate !== '' || prev.endDate !== '' || prev.startTime !== '' || e.target.value !== ''
+                      }))}
+                      className="time-input"
+                    />
+                  </div>
                 </div>
-
+                
+                {(dateRangeFilter.enabled) && (
+                  <button 
+                    className="clear-date-filter"
+                    onClick={() => setDateRangeFilter({
+                      enabled: false,
+                      startDate: '',
+                      endDate: '',
+                      startTime: '',
+                      endTime: ''
+                    })}
+                    title="Clear date range filter"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
+              
+              {dateRangeFilter.enabled && (
+                <div className="date-filter-info">
+                  <small style={{color: '#666', fontSize: '12px'}}>
+                    Showing assessments created or submitted within the selected time range
+                  </small>
+                </div>
+              )}
             </div>
           </div>
 
@@ -933,7 +1018,7 @@ export default function AssessmentDashboard() {
                             className="dropdown-search-input"
                           />
                         </div>
-                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>All Assessment IDs</div>
+                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>Select all</div>
                         {assessments.map(a => a.id).filter((id, index, self) => self.indexOf(id) === index)
                           .filter(id => id.toLowerCase().includes(dropdownSearch.toLowerCase()))
                           .map(id => (
@@ -958,7 +1043,7 @@ export default function AssessmentDashboard() {
                             className="dropdown-search-input"
                           />
                         </div>
-                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>All Case IDs</div>
+                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>Select all</div>
                         {assessments.map(a => a.caseId).filter((id, index, self) => self.indexOf(id) === index)
                           .filter(id => id.toLowerCase().includes(dropdownSearch.toLowerCase()))
                           .map(id => (
@@ -974,7 +1059,7 @@ export default function AssessmentDashboard() {
                     </div>
                     {activeDropdown === 'assessmentType' && (
                       <div className="column-dropdown" onClick={(e) => e.stopPropagation()}>
-                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>All Types</div>
+                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>Select all</div>
                         <div className="dropdown-option" onClick={() => handleFilterSelect('CANS')}>CANS</div>
                         <div className="dropdown-option" onClick={() => handleFilterSelect('F.A.R.E')}>F.A.R.E</div>
                         <div className="dropdown-option" onClick={() => handleFilterSelect('Residential')}>Residential</div>
@@ -988,7 +1073,7 @@ export default function AssessmentDashboard() {
                     </div>
                     {activeDropdown === 'status' && (
                       <div className="column-dropdown" onClick={(e) => e.stopPropagation()}>
-                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>All Statuses</div>
+                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>Select all</div>
                         <div className="dropdown-option" onClick={() => handleFilterSelect('completed')}>Completed</div>
                         <div className="dropdown-option" onClick={() => handleFilterSelect('in-progress')}>In Progress</div>
                       </div>
@@ -1001,7 +1086,7 @@ export default function AssessmentDashboard() {
                     </div>
                     {activeDropdown === 'createdOn' && (
                       <div className="column-dropdown" onClick={(e) => e.stopPropagation()}>
-                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>All Dates</div>
+                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>Select all</div>
                         <div className="dropdown-option" onClick={() => handleFilterSelect('today')}>Today</div>
                         <div className="dropdown-option" onClick={() => handleFilterSelect('week')}>Last 7 Days</div>
                         <div className="dropdown-option" onClick={() => handleFilterSelect('month')}>Last 30 Days</div>
@@ -1024,7 +1109,7 @@ export default function AssessmentDashboard() {
                             className="dropdown-search-input"
                           />
                         </div>
-                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>All Users</div>
+                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>Select all</div>
                         {uniqueCreatedBy.filter(user => user.toLowerCase().includes(dropdownSearch.toLowerCase())).map(user => (
                           <div key={user} className="dropdown-option" onClick={() => handleFilterSelect(user)}>{user}</div>
                         ))}
