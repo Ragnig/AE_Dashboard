@@ -115,6 +115,61 @@ export default function AssessmentDashboard() {
   useEffect(() => {
     loadAssessments();
    
+    // Add test data if no assessments exist
+    const addTestDataIfNeeded = () => {
+      const stored = localStorage.getItem('assessments');
+      if (!stored || JSON.parse(stored).length === 0) {
+        console.log('📝 Adding test assessments for date filtering validation');
+        const testAssessments = [
+          {
+            id: 'TEST-001',
+            caseId: 'CASE-001',
+            type: 'CANS',
+            status: 'Completed',
+            createdBy: 'Test User',
+            createdOn: '12/01/2025, 10:00:00 AM',
+            submittedOn: '12/01/2025, 11:00:00 AM',
+            data: {}
+          },
+          {
+            id: 'TEST-002', 
+            caseId: 'CASE-002',
+            type: 'FARE',
+            status: 'In-progress',
+            createdBy: 'Test User',
+            createdOn: '12/03/2025, 2:30:15 PM',
+            submittedOn: null,
+            data: {}
+          },
+          {
+            id: 'TEST-003',
+            caseId: 'CASE-003', 
+            type: 'Residential',
+            status: 'In-progress',
+            createdBy: 'Test User',
+            createdOn: '12/05/2025, 9:45:22 AM',
+            submittedOn: null,
+            data: {}
+          },
+          {
+            id: 'TEST-004',
+            caseId: 'CASE-004',
+            type: 'CANS', 
+            status: 'Completed',
+            createdBy: 'Test User',
+            createdOn: '12/07/2025, 4:20:10 PM',
+            submittedOn: '12/07/2025, 4:45:00 PM',
+            data: {}
+          }
+        ];
+        localStorage.setItem('assessments', JSON.stringify(testAssessments));
+        setAssessments(testAssessments);
+        console.log('✅ Test assessments added:', testAssessments);
+      }
+    };
+    
+    addTestDataIfNeeded();
+   
     // Check URL hash for direct assessment links (from new tabs)
     const hash = window.location.hash;
     if (hash && hash.startsWith('#assessment/')) {
