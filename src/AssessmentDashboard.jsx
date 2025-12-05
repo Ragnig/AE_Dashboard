@@ -193,6 +193,7 @@ export default function AssessmentDashboard() {
     setSearchQuery('');
     setActiveDropdown(null);
     setDropdownSearch('');
+  
     setCurrentPage(1);
     setDateRangeFilter({
       enabled: false,
@@ -307,9 +308,13 @@ export default function AssessmentDashboard() {
   };
  
   const handleFARESave = (data) => {
+    console.log('🔍 handleFARESave called with data:', data);
+    
     // Use existing ID from selectedDraft if available, otherwise create new one
     const assessmentId = selectedDraft?.id || data.id || `${Math.floor(100000 + Math.random() * 900000)}`;
    
+    console.log('🔍 Assessment ID:', assessmentId);
+    
     // Find existing assessment to preserve creation details
     const existingAssessment = assessments.find(a => a.id === assessmentId);
    
@@ -427,9 +432,10 @@ export default function AssessmentDashboard() {
     }
   };
  
-  const handleCloseForm = () => {
+  const handleCloseForm = async () => {
     console.log('🔍 handleCloseForm called');
     console.log('🔍 Current activeForm:', activeForm);
+    
     setActiveForm(null);
     setSelectedDraft(null);
     console.log('🔍 Setting activeForm to null');
@@ -439,7 +445,8 @@ export default function AssessmentDashboard() {
   };
  
   const getStatusClass = (status) => {
-    switch(status.toLowerCase()) {
+    const statusLower = (status || '').toLowerCase();
+    switch(statusLower) {
       case 'completed':
         return 'status-completed';
       case 'in-progress':
@@ -450,7 +457,8 @@ export default function AssessmentDashboard() {
   };
  
   const getStatusIcon = (status) => {
-    switch(status.toLowerCase()) {
+    const statusLower = (status || '').toLowerCase();
+    switch(statusLower) {
       case 'completed':
         return <CheckCircle className="icon-sm" />;
       case 'in-progress':
@@ -463,27 +471,36 @@ export default function AssessmentDashboard() {
   const filteredAssessments = assessments.filter(assessment => {
     // Search functionality
     const matchesSearch = searchQuery === '' ||
-      assessment.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      assessment.caseId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      assessment.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      assessment.createdBy.toLowerCase().includes(searchQuery.toLowerCase());
+      (assessment.id || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (assessment.caseId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (assessment.type || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (assessment.createdBy || '').toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Date range filter for completed assessments
+    // Date range filter for all assessments (completed and in-progress)
     let matchesDateRange = true;
     if (dateRangeFilter.enabled && dateRangeFilter.startDate && dateRangeFilter.endDate) {
-      // Only apply to completed assessments
-      if (assessment.status.toLowerCase() === 'completed' && assessment.submittedOn && assessment.submittedOn !== '-') {
-        const submittedDate = new Date(assessment.submittedOn);
-        const startDate = new Date(dateRangeFilter.startDate);
-        const endDate = new Date(dateRangeFilter.endDate);
-        
-        // Set end date to end of day for inclusive range
-        endDate.setHours(23, 59, 59, 999);
-        
-        matchesDateRange = submittedDate >= startDate && submittedDate <= endDate;
-      } else if (assessment.status.toLowerCase() !== 'completed') {
-        // If date range filter is active, exclude non-completed assessments
+      const startDate = new Date(dateRangeFilter.startDate);
+      const endDate = new Date(dateRangeFilter.endDate);
+      
+      // Set start date to beginning of day and end date to end of day for fully inclusive range
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
+      
+      let dateToCheck = null;
+      
+      // For completed assessments, prefer submitted date if available, otherwise use created date
+      if ((assessment.status || '').toLowerCase() === 'completed' && assessment.submittedOn && assessment.submittedOn !== '-') {
+        dateToCheck = new Date(assessment.submittedOn);
+      } else {
+        // For in-progress assessments or completed ones without submitted date, use created date
+        dateToCheck = new Date(assessment.createdOn);
+      }
+      
+      // Handle invalid dates
+      if (isNaN(dateToCheck.getTime())) {
         matchesDateRange = false;
+      } else {
+        matchesDateRange = dateToCheck >= startDate && dateToCheck <= endDate;
       }
     }
 
@@ -492,16 +509,16 @@ export default function AssessmentDashboard() {
     if (filterColumn !== 'all' && filterValue !== 'all') {
       switch (filterColumn) {
         case 'assessmentId':
-          matchesFilter = assessment.id.toLowerCase().includes(filterValue.toLowerCase());
+          matchesFilter = (assessment.id || '').toLowerCase().includes(filterValue.toLowerCase());
           break;
         case 'caseId':
-          matchesFilter = assessment.caseId.toLowerCase().includes(filterValue.toLowerCase());
+          matchesFilter = (assessment.caseId || '').toLowerCase().includes(filterValue.toLowerCase());
           break;
         case 'assessmentType':
           matchesFilter = assessment.type === filterValue;
           break;
         case 'status':
-          matchesFilter = assessment.status.toLowerCase() === filterValue.toLowerCase();
+          matchesFilter = (assessment.status || '').toLowerCase() === filterValue.toLowerCase();
           break;
         case 'createdBy':
           matchesFilter = assessment.createdBy === filterValue;
@@ -587,13 +604,17 @@ export default function AssessmentDashboard() {
       setActiveDropdown(null);
     } else {
       setActiveDropdown(column);
-      setFilterColumn(column);
+      // Don't automatically set filterColumn here - only set it when user actually selects a filter
       setDropdownSearch('');
     }
   };
 
   // Handle filter selection from dropdown
   const handleFilterSelect = (value) => {
+    // Only set the filter column when user actually selects a value
+    if (activeDropdown) {
+      setFilterColumn(activeDropdown);
+    }
     setFilterValue(value);
     setActiveDropdown(null);
     setDropdownSearch('');
@@ -887,12 +908,7 @@ export default function AssessmentDashboard() {
                     className="date-input"
                   />
                 </div>
-                
-                {dateRangeFilter.startDate && dateRangeFilter.endDate && (
-                  <div className="date-range-info">
-                    Showing completed assessments from {new Date(dateRangeFilter.startDate).toLocaleDateString()} to {new Date(dateRangeFilter.endDate).toLocaleDateString()}
-                  </div>
-                )}
+
               </div>
             </div>
           </div>
@@ -1036,11 +1052,11 @@ export default function AssessmentDashboard() {
                     <tr key={assessment.id}>
                       <td>
                         <a
-                          href={`${window.location.origin}${window.location.pathname}?data=${btoa(JSON.stringify(assessment))}#assessment/${assessment.type.toLowerCase().replace(/\./g, '').replace(/\s+/g, '')}/${assessment.id}`}
+                          href={`${window.location.origin}${window.location.pathname}?data=${btoa(JSON.stringify(assessment))}#assessment/${(assessment.type || 'unknown').toLowerCase().replace(/\./g, '').replace(/\s+/g, '')}/${assessment.id}`}
                           className="assessment-link"
                           data-assessment-id={assessment.id}
                           data-assessment-type={assessment.type}
-                          title={`${assessment.type} Assessment ${assessment.id} - Right-click to open in new tab/window`}
+                          title={`${assessment.type || 'Assessment'} Assessment ${assessment.id} - Right-click to open in new tab/window`}
                           onClick={(e) => {
                             // Save data immediately for all click types
                             const assessmentData = JSON.stringify(assessment);
@@ -1111,15 +1127,15 @@ export default function AssessmentDashboard() {
                           {assessment.id}
                         </a>
                       </td>
-                      <td>{assessment.caseId}</td>
-                      <td>{assessment.type}</td>
+                      <td>{assessment.caseId || 'N/A'}</td>
+                      <td>{assessment.type || 'Unknown'}</td>
                       <td>
                         <span className={`status-badge ${getStatusClass(assessment.status)}`}>
                           {getStatusIcon(assessment.status)}
-                          {assessment.status}
+                          {assessment.status || 'Unknown'}
                         </span>
                       </td>
-                      <td>{assessment.createdOn}</td>
+                      <td>{assessment.createdOn || 'N/A'}</td>
                       <td>{assessment.createdBy || 'N/A'}</td>
                       <td>{assessment.submittedOn || '-'}</td>
                     </tr>

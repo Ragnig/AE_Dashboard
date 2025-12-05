@@ -205,7 +205,7 @@ const styles = {
       fontWeight: 600,
     };
     if (active) return { ...base, background: "#5b6a9a", color: "#fff", borderColor: "#5b6a9a" };
-    if (incomplete) return { ...base, background: "#fff", color: "#374151", borderColor: "#e5e7eb" };
+    if (incomplete) return { ...base, background: "#fef2f2", color: "#dc2626", borderColor: "#fca5a5" }; // Red for incomplete
     if (saved) return { ...base, background: "#e8f4ea", color: "#166534", borderColor: "#86efac" };
     return { ...base, background: "#f3f4f6", color: "#374151", borderColor: "#e5e7eb" };
   },
@@ -324,7 +324,7 @@ const styles = {
     width: 20,
     height: 20,
     borderRadius: 10,
-    background: completed ? "#16a34a" : incomplete ? "#f59e0b" : "transparent",
+    background: completed ? "#16a34a" : incomplete ? "#dc2626" : "transparent", // Red for incomplete
     color: completed ? "#fff" : incomplete ? "#fff" : "#9ca3af",
     border: completed || incomplete ? "none" : "1px solid transparent",
     fontSize: 12,

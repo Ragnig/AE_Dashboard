@@ -667,12 +667,88 @@ function App({ onClose, onSave, draftData }) {
     }
   }, [draftData]);
 
+  // Monitor isSubmitted state changes
+  useEffect(() => {
+    console.log("isSubmitted state changed to:", isSubmitted);
+  }, [isSubmitted]);
+
+  // Add beforeunload handler for auto-save
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (!hasAnsweredQuestion) {
+        // User hasn't answered any questions, discard the form
+        console.log('🗑️ Residential: Discarding form on unload - no questions answered');
+        const existingAssessments = JSON.parse(localStorage.getItem('assessments') || '[]');
+        const filteredAssessments = existingAssessments.filter(a => a.id !== assessmentId);
+        localStorage.setItem('assessments', JSON.stringify(filteredAssessments));
+        return;
+      }
+      
+      if (hasAnsweredQuestion && !isSubmitted) {
+        console.log('🚨 Residential: beforeunload triggered - saving assessment');
+        
+        const saveData = {
+          id: assessmentId,
+          case_id: `CASE-${Date.now()}`, // Generate case ID
+          contract_number: formData.contract_number || 'N/A',
+          provider: formData.provider || 'N/A', 
+          date: formData.date || new Date().toISOString().split('T')[0],
+          status: 'In-progress',
+          type: 'Residential',
+          created_on: new Date().toISOString(),
+          created_by: 'Current User', // You may want to get this from auth context
+          submitted_on: null,
+          data: formData
+        };
+        
+        // Save to localStorage
+        const existingAssessments = JSON.parse(localStorage.getItem('assessments') || '[]');
+        const assessmentIndex = existingAssessments.findIndex(a => a.id === assessmentId);
+        
+        if (assessmentIndex !== -1) {
+          existingAssessments[assessmentIndex] = saveData;
+        } else {
+          existingAssessments.push(saveData);
+        }
+        
+        localStorage.setItem('assessments', JSON.stringify(existingAssessments));
+        console.log('💾 Residential: Assessment auto-saved to localStorage', saveData);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasAnsweredQuestion, isSubmitted, assessmentId, formData]);
+
   const updateField = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
     
     // Track that user has answered at least one question
     if (value && value.toString().trim() !== '' && !hasAnsweredQuestion) {
+      const wasFirstAnswer = !hasAnsweredQuestion;
       setHasAnsweredQuestion(true);
+      
+      // Save to dashboard when first question is answered
+      if (wasFirstAnswer && typeof onSave === 'function') {
+        console.log('🟢 Residential: Saving to dashboard - first question answered');
+        const saveData = {
+          id: assessmentId,
+          case_id: `CASE-${Date.now()}`,
+          contract_number: formData.contract_number || 'N/A',
+          provider: formData.provider || 'N/A', 
+          date: formData.date || new Date().toISOString().split('T')[0],
+          status: 'In-progress',
+          type: 'Residential',
+          created_on: new Date().toISOString(),
+          created_by: 'Current User',
+          submitted_on: null,
+          data: { ...formData, [name]: value }
+        };
+        onSave(saveData);
+      }
     }
   };
 
@@ -833,16 +909,23 @@ function App({ onClose, onSave, draftData }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    console.log("Submit button clicked - checking for errors...");
+    console.log("Score errors:", scoreErrors);
+    console.log("Date error:", dateError);
+
     const hasScoreError = Object.values(scoreErrors).some(Boolean);
     if (hasScoreError) {
+      console.log("Submission blocked by score errors");
       alert("Please fix score errors before submitting.");
       return;
     }
     if (dateError) {
+      console.log("Submission blocked by date errors");
       alert("Please fix date errors before submitting.");
       return;
     }
 
+    console.log("No validation errors, proceeding with submission...");
     console.log("Assessment Data:", formData);
     
     // Save as completed assessment
@@ -855,20 +938,58 @@ function App({ onClose, onSave, draftData }) {
       data: formData
     };
 
+    console.log("Calling onSave with:", saveData);
     if (onSave) {
       onSave(saveData);
     }
     
-    console.log("Setting isSubmitted to true..."); // Debug log
+    console.log("About to set isSubmitted to true...");
     // Show success screen
     setIsSubmitted(true);
-    console.log("isSubmitted state should now be true"); // Debug log
+    console.log("isSubmitted has been set to true");
     // Scroll to top to show the success message
     window.scrollTo(0, 0);
   };
 
   const handleReturnToDashboard = () => {
     console.log("Returning to dashboard...");
+    
+    // Auto-save if user has answered questions but hasn't submitted
+    if (hasAnsweredQuestion && !isSubmitted) {
+      console.log('💾 Residential: Auto-saving before returning to dashboard');
+      
+      const saveData = {
+        id: assessmentId,
+        case_id: `CASE-${Date.now()}`, // Generate case ID
+        contract_number: formData.contract_number || 'N/A',
+        provider: formData.provider || 'N/A', 
+        date: formData.date || new Date().toISOString().split('T')[0],
+        status: 'In-progress',
+        type: 'Residential',
+        created_on: new Date().toISOString(),
+        created_by: 'Current User', // You may want to get this from auth context
+        submitted_on: null,
+        data: formData
+      };
+      
+      // Save to localStorage
+      const existingAssessments = JSON.parse(localStorage.getItem('assessments') || '[]');
+      const assessmentIndex = existingAssessments.findIndex(a => a.id === assessmentId);
+      
+      if (assessmentIndex !== -1) {
+        existingAssessments[assessmentIndex] = saveData;
+      } else {
+        existingAssessments.push(saveData);
+      }
+      
+      localStorage.setItem('assessments', JSON.stringify(existingAssessments));
+      console.log('✅ Residential: Assessment auto-saved before dashboard return');
+      
+      // Also call onSave if available
+      if (onSave) {
+        onSave(saveData);
+      }
+    }
     
     // Close the form and return to dashboard
     if (onClose) {

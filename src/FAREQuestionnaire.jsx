@@ -982,8 +982,16 @@ export default function FAREQuestionnaire({ onSave, onClose, draftData }) {
   };
 
   const handleOptionChange = (questionId, value) => {
-    if (isCompleted) return;
+    console.log('🔍 FARE handleOptionChange called:', { questionId, value });
+    
+    if (isCompleted) {
+      console.log('🔍 FARE: Form is completed, returning early');
+      return;
+    }
+    
     const currentQuestionIndex = QUESTIONS.findIndex(q => q.id === questionId);
+    console.log('🔍 FARE: Current question index:', currentQuestionIndex);
+    
     if (!interviewEnded) {
       const unansweredQuestions = [];
       for (let i = 0; i < currentQuestionIndex; i++) {
@@ -997,7 +1005,9 @@ export default function FAREQuestionnaire({ onSave, onClose, draftData }) {
           });
         }
       }
+      console.log('🔍 FARE: Unanswered questions:', unansweredQuestions);
       if (unansweredQuestions.length > 0) {
+        console.log('🔍 FARE: Showing missed questions modal');
         setMissedQuestions(unansweredQuestions);
         setShowMissedQuestionsModal(true);
         return;
@@ -1121,36 +1131,48 @@ export default function FAREQuestionnaire({ onSave, onClose, draftData }) {
     if (current.includes(value) && updated.length < current.length) {
       if (newOptions[value]) delete newOptions[value];
     }
-    setFormData(prev => ({
-      ...prev,
-      [questionId]: {
-        ...prev[questionId],
-        responses: updated,
-        options: {
-          ...newOptions,
-          ...(updated.includes(value) ? {
-            [value]: {
-              ...newOptions[value],
-              ...optionSettings
-            }
-          } : {})
-        }
-      }
-    }));
     
-    // Track that user has answered at least one question
-    if (updated.length > 0) {
-      const wasFirstAnswer = !hasAnsweredQuestion;
-      setHasAnsweredQuestion(true);
+    console.log('🔍 FARE: About to update form data:', { questionId, value, updated, current });
+    
+    setFormData(prev => {
+      const updatedFormData = {
+        ...prev,
+        [questionId]: {
+          ...prev[questionId],
+          responses: updated,
+          options: {
+            ...newOptions,
+            ...(updated.includes(value) ? {
+              [value]: {
+                ...newOptions[value],
+                ...optionSettings
+              }
+            } : {})
+          }
+        }
+      };
       
-      // Save to dashboard when first question is answered
-      if (wasFirstAnswer && typeof onSave === 'function') {
-        console.log('🟢 FARE: Saving to dashboard - first question answered');
+      // Track that user has answered at least one question
+      if (updated.length > 0) {
+        const wasFirstAnswer = !hasAnsweredQuestion;
+        setHasAnsweredQuestion(true);
         
-        const todayIso = new Date().toISOString().split('T')[0];
+        console.log('🔍 FARE Question answered:', {
+          questionId,
+          value,
+          wasFirstAnswer,
+          hasOnSave: typeof onSave === 'function',
+          updated,
+          updatedFormData
+        });
         
-        // Update formData first, then save
-        setTimeout(() => {
+        // Save to dashboard when first question is answered
+        if (wasFirstAnswer && typeof onSave === 'function') {
+          console.log('🟢 FARE: Saving to dashboard - first question answered');
+          
+          const todayIso = new Date().toISOString().split('T')[0];
+          
+          // Use the updated form data directly
           const saveData = {
             id: assessmentId,
             caseId: caseId || "N/A",
@@ -1162,14 +1184,22 @@ export default function FAREQuestionnaire({ onSave, onClose, draftData }) {
               caseWorkerName: caseWorkerName || "",
               dateCompleted: todayIso
             },
-            answers: formData,
+            answers: updatedFormData,
             autoSaved: true
           };
           
-          onSave(saveData);
-        }, 100);
+          console.log('🔍 FARE saveData:', saveData);
+          
+          // Save immediately with updated data
+          setTimeout(() => {
+            console.log('🔍 FARE: About to call onSave');
+            onSave(saveData);
+          }, 100);
+        }
       }
-    }
+      
+      return updatedFormData;
+    });
     
     setUnsavedChanges(true);
     if (optionSettings.requireYouthComment || optionSettings.requireInterviewerComment) {
