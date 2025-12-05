@@ -30,6 +30,87 @@ export default function AssessmentDashboard() {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
+
+  // Generic date parsing function that handles multiple date formats
+  const parseDate = (dateString) => {
+    if (!dateString) return null;
+    
+    try {
+      // Handle various date formats
+      let parsedDate = null;
+      
+      // Format: "12/05/2025, 10:49:35 AM" (localeString format)
+      if (dateString.includes(',')) {
+        const datePart = dateString.split(',')[0].trim();
+        parsedDate = new Date(datePart);
+      }
+      // Format: "2025-12-05" (ISO date format)
+      else if (dateString.includes('-') && dateString.length === 10) {
+        parsedDate = new Date(dateString + 'T00:00:00');
+      }
+      // Format: "2025-12-05T10:49:35.000Z" (ISO datetime format)
+      else if (dateString.includes('T')) {
+        parsedDate = new Date(dateString);
+      }
+      // Try direct parsing as fallback
+      else {
+        parsedDate = new Date(dateString);
+      }
+      
+      // Validate the parsed date
+      if (!isNaN(parsedDate.getTime())) {
+        console.log('✅ Date parsed successfully:', dateString, '→', parsedDate.toISOString().split('T')[0]);
+        return parsedDate;
+      }
+    } catch (error) {
+      console.warn('❌ Failed to parse date:', dateString, error);
+    }
+    
+    console.warn('❌ Invalid date string:', dateString);
+    return null;
+  };
+
+  // Generic date range checking function
+  const isDateInRange = (dateToCheck, startDate, endDate) => {
+    console.log('🔍 Checking date range:', { dateToCheck, startDate, endDate });
+    
+    const checkDate = parseDate(dateToCheck);
+    if (!checkDate) {
+      console.log('❌ Failed to parse dateToCheck:', dateToCheck);
+      return false;
+    }
+    
+    // Normalize to just the date part (ignore time)
+    const checkDateOnly = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate());
+    console.log('📅 Normalized check date:', checkDateOnly.toISOString().split('T')[0]);
+    
+    let isInRange = true;
+    
+    // Check start date (inclusive)
+    if (startDate && startDate.trim() !== '') {
+      const startDateTime = new Date(startDate + 'T00:00:00');
+      const startDateOnly = new Date(startDateTime.getFullYear(), startDateTime.getMonth(), startDateTime.getDate());
+      console.log('📅 Start date boundary:', startDateOnly.toISOString().split('T')[0]);
+      if (checkDateOnly < startDateOnly) {
+        console.log('❌ Date is before start date');
+        isInRange = false;
+      }
+    }
+    
+    // Check end date (inclusive)
+    if (endDate && endDate.trim() !== '') {
+      const endDateTime = new Date(endDate + 'T23:59:59');
+      const endDateOnly = new Date(endDateTime.getFullYear(), endDateTime.getMonth(), endDateTime.getDate());
+      console.log('📅 End date boundary:', endDateOnly.toISOString().split('T')[0]);
+      if (checkDateOnly > endDateOnly) {
+        console.log('❌ Date is after end date');
+        isInRange = false;
+      }
+    }
+    
+    console.log('✅ Date range result:', isInRange);
+    return isInRange;
+  };
  
   useEffect(() => {
     loadAssessments();
@@ -481,39 +562,24 @@ export default function AssessmentDashboard() {
       (assessment.type || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (assessment.createdBy || '').toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Date range filter based on Created On date only
+    // Date range filter using generic date parsing
     let matchesDateRange = true;
     if (dateRangeFilter.enabled && (dateRangeFilter.startDate || dateRangeFilter.endDate)) {
-      let startDateTime = null;
-      let endDateTime = null;
+      console.log('🔍 Date filtering for assessment:', assessment.id, {
+        enabled: dateRangeFilter.enabled,
+        startDate: dateRangeFilter.startDate,
+        endDate: dateRangeFilter.endDate,
+        assessmentCreatedOn: assessment.createdOn
+      });
       
-      // Set start date/time (inclusive)
-      if (dateRangeFilter.startDate) {
-        startDateTime = new Date(dateRangeFilter.startDate);
-        startDateTime.setHours(0, 0, 0, 0); // Beginning of start date
-      }
+      // Use generic date range checking
+      matchesDateRange = isDateInRange(
+        assessment.createdOn,
+        dateRangeFilter.startDate,
+        dateRangeFilter.endDate
+      );
       
-      // Set end date/time (inclusive)  
-      if (dateRangeFilter.endDate) {
-        endDateTime = new Date(dateRangeFilter.endDate);
-        endDateTime.setHours(23, 59, 59, 999); // End of end date
-      }
-      
-      // Check only the Created On date for filtering
-      const createdDate = new Date(assessment.createdOn);
-      
-      if (!isNaN(createdDate.getTime())) {
-        // Check if created date is within the specified range
-        if (startDateTime && createdDate < startDateTime) {
-          matchesDateRange = false;
-        }
-        if (endDateTime && createdDate > endDateTime) {
-          matchesDateRange = false;
-        }
-      } else {
-        // If created date is invalid, exclude from results
-        matchesDateRange = false;
-      }
+      console.log('📊 Final date range result for', assessment.id + ':', matchesDateRange);
     }
 
     // Column-based filtering
@@ -568,6 +634,15 @@ export default function AssessmentDashboard() {
     const dateA = new Date(a.createdOn);
     const dateB = new Date(b.createdOn);
     return dateB.getTime() - dateA.getTime();
+  });
+
+  // Debug: Log filtered results
+  console.log('🔍 Filtered assessments count:', filteredAssessments.length, 'out of', assessments.length);
+  console.log('📊 Current filters:', {
+    search: searchQuery,
+    dateRange: dateRangeFilter,
+    column: filterColumn,
+    value: filterValue
   });
  
   // Pagination calculations
@@ -898,11 +973,19 @@ export default function AssessmentDashboard() {
                     type="date"
                     placeholder="mm/dd/yyyy"
                     value={dateRangeFilter.startDate}
-                    onChange={(e) => setDateRangeFilter(prev => ({
-                      ...prev,
-                      startDate: e.target.value,
-                      enabled: e.target.value !== '' || prev.endDate !== ''
-                    }))}
+                    onChange={(e) => {
+                      const newStartDate = e.target.value;
+                      console.log('🗓️ Start date changed from', dateRangeFilter.startDate, 'to', newStartDate);
+                      setDateRangeFilter(prev => {
+                        const newFilter = {
+                          ...prev,
+                          startDate: newStartDate,
+                          enabled: newStartDate !== '' || prev.endDate !== ''
+                        };
+                        console.log('🔄 Updated date range filter:', newFilter);
+                        return newFilter;
+                      });
+                    }}
                     className="date-input"
                   />
                 </div>
@@ -914,11 +997,19 @@ export default function AssessmentDashboard() {
                     type="date"
                     placeholder="mm/dd/yyyy"
                     value={dateRangeFilter.endDate}
-                    onChange={(e) => setDateRangeFilter(prev => ({
-                      ...prev,
-                      endDate: e.target.value,
-                      enabled: prev.startDate !== '' || e.target.value !== ''
-                    }))}
+                    onChange={(e) => {
+                      const newEndDate = e.target.value;
+                      console.log('🗓️ End date changed from', dateRangeFilter.endDate, 'to', newEndDate);
+                      setDateRangeFilter(prev => {
+                        const newFilter = {
+                          ...prev,
+                          endDate: newEndDate,
+                          enabled: prev.startDate !== '' || newEndDate !== ''
+                        };
+                        console.log('🔄 Updated date range filter:', newFilter);
+                        return newFilter;
+                      });
+                    }}
                     className="date-input"
                   />
                 </div>
@@ -926,11 +1017,14 @@ export default function AssessmentDashboard() {
                 {(dateRangeFilter.enabled) && (
                   <button 
                     className="clear-date-filter"
-                    onClick={() => setDateRangeFilter({
-                      enabled: false,
-                      startDate: '',
-                      endDate: ''
-                    })}
+                    onClick={() => {
+                      console.log('Clearing date range filter');
+                      setDateRangeFilter({
+                        enabled: false,
+                        startDate: '',
+                        endDate: ''
+                      });
+                    }}
                     title="Clear date range filter"
                   >
                     ✕
