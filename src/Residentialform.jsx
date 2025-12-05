@@ -746,7 +746,8 @@ function App({ onClose, onSave, draftData }) {
           created_on: new Date().toISOString(),
           created_by: 'Current User',
           submitted_on: null,
-          data: updatedFormData
+          data: updatedFormData,
+          autoSaved: true // Mark as auto-save so form doesn't close
         };
         onSave(saveData);
       }
@@ -936,7 +937,8 @@ function App({ onClose, onSave, draftData }) {
       provider: formData.provider || 'N/A', 
       date: formData.date || new Date().toISOString().split('T')[0],
       status: 'Completed', // Set status to completed on submit
-      data: formData
+      data: formData,
+      autoSaved: true // Mark as auto-save so form doesn't close (will show success screen instead)
     };
 
     console.log("Calling onSave with:", saveData);
