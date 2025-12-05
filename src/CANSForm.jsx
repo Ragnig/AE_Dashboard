@@ -277,6 +277,9 @@ export default function CANSForm({ overview = demoOverview, sections = demoSecti
   const setAnswer = (rowId, patch) => {
     console.log('🔄 setAnswer called with rowId:', rowId, 'patch:', patch);
     
+    // Calculate the next answers object first
+    const nextAnswers = { ...answers, [rowId]: { ...(answers[rowId] || { score: null, description: "", unk: false, na: false }), ...patch } };
+    
     // Track that user has answered at least one question
     const wasFirstAnswer = !hasAnsweredQuestion;
     if (patch && (patch.score !== null || (patch.description && patch.description.trim() !== '') || patch.unk || patch.na)) {
@@ -303,7 +306,7 @@ export default function CANSForm({ overview = demoOverview, sections = demoSecti
               memberDob: "2002-12-25",
               memberRole: formData.memberRole || "Caregiver"
             },
-            answers: next,
+            answers: nextAnswers,
             autoSaved: true
           };
           
@@ -313,13 +316,7 @@ export default function CANSForm({ overview = demoOverview, sections = demoSecti
       }
     }
     
-    setAnswers((prev) => {
-      console.log('🔄 Previous answers:', prev);
-      const next = { ...prev, [rowId]: { ...(prev[rowId] || { score: null, description: "", unk: false, na: false }), ...patch } };
-      console.log('🔄 Next answers:', next);
-      
-      return next;
-    });
+    setAnswers(nextAnswers);
     setIsDirty(true);
   };
 

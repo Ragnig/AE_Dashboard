@@ -689,7 +689,7 @@ function App({ onClose, onSave, draftData }) {
         
         const saveData = {
           id: assessmentId,
-          case_id: `CASE-${Date.now()}`, // Generate case ID
+          caseId: formData.contract_number || 'N/A', // Use caseId to match dashboard expectations
           contract_number: formData.contract_number || 'N/A',
           provider: formData.provider || 'N/A', 
           date: formData.date || new Date().toISOString().split('T')[0],
@@ -724,7 +724,8 @@ function App({ onClose, onSave, draftData }) {
   }, [hasAnsweredQuestion, isSubmitted, assessmentId, formData]);
 
   const updateField = (name, value) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const updatedFormData = { ...formData, [name]: value };
+    setFormData(updatedFormData);
     
     // Track that user has answered at least one question
     if (value && value.toString().trim() !== '' && !hasAnsweredQuestion) {
@@ -736,16 +737,16 @@ function App({ onClose, onSave, draftData }) {
         console.log('🟢 Residential: Saving to dashboard - first question answered');
         const saveData = {
           id: assessmentId,
-          case_id: `CASE-${Date.now()}`,
-          contract_number: formData.contract_number || 'N/A',
-          provider: formData.provider || 'N/A', 
-          date: formData.date || new Date().toISOString().split('T')[0],
+          caseId: updatedFormData.contract_number || 'N/A', // Use caseId to match dashboard expectations
+          contract_number: updatedFormData.contract_number || 'N/A',
+          provider: updatedFormData.provider || 'N/A', 
+          date: updatedFormData.date || new Date().toISOString().split('T')[0],
           status: 'In-progress',
           type: 'Residential',
           created_on: new Date().toISOString(),
           created_by: 'Current User',
           submitted_on: null,
-          data: { ...formData, [name]: value }
+          data: updatedFormData
         };
         onSave(saveData);
       }
@@ -960,7 +961,7 @@ function App({ onClose, onSave, draftData }) {
       
       const saveData = {
         id: assessmentId,
-        case_id: `CASE-${Date.now()}`, // Generate case ID
+        caseId: formData.contract_number || 'N/A', // Use caseId to match dashboard expectations
         contract_number: formData.contract_number || 'N/A',
         provider: formData.provider || 'N/A', 
         date: formData.date || new Date().toISOString().split('T')[0],

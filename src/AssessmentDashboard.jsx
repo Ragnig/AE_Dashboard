@@ -233,6 +233,7 @@ export default function AssessmentDashboard() {
  
   const handleCANSSave = (data) => {
     console.log('🔵 handleCANSSave called with data:', data);
+    console.log('🔵 Is auto-saved?:', data.autoSaved);
     
     // Use existing ID from selectedDraft if available, otherwise use data.id
     const assessmentId = selectedDraft?.id || data.id || `CANS-${Date.now()}`;
@@ -309,6 +310,7 @@ export default function AssessmentDashboard() {
  
   const handleFARESave = (data) => {
     console.log('🔍 handleFARESave called with data:', data);
+    console.log('🔍 Is auto-saved?:', data.autoSaved);
     
     // Use existing ID from selectedDraft if available, otherwise create new one
     const assessmentId = selectedDraft?.id || data.id || `${Math.floor(100000 + Math.random() * 900000)}`;
@@ -375,6 +377,9 @@ export default function AssessmentDashboard() {
   };
  
   const handleResidentialSave = (data) => {
+    console.log('🏠 handleResidentialSave called with data:', data);
+    console.log('🏠 Is auto-saved?:', data.autoSaved);
+    
     // Use existing ID from selectedDraft if available, otherwise create new one
     const assessmentId = selectedDraft?.id || data.id || `${Math.floor(100000 + Math.random() * 900000)}`;
    
@@ -476,7 +481,7 @@ export default function AssessmentDashboard() {
       (assessment.type || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (assessment.createdBy || '').toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Date range filter for all assessments (completed and in-progress) - inclusive of both dates
+    // Date range filter based on Created On date only
     let matchesDateRange = true;
     if (dateRangeFilter.enabled && (dateRangeFilter.startDate || dateRangeFilter.endDate)) {
       let startDateTime = null;
@@ -488,58 +493,27 @@ export default function AssessmentDashboard() {
         startDateTime.setHours(0, 0, 0, 0); // Beginning of start date
       }
       
-      // Set end date/time (inclusive)
+      // Set end date/time (inclusive)  
       if (dateRangeFilter.endDate) {
         endDateTime = new Date(dateRangeFilter.endDate);
         endDateTime.setHours(23, 59, 59, 999); // End of end date
       }
       
-      // Check both created and submitted dates for all assessments
-      let assessmentMatches = false;
-      
-      // Parse created date
+      // Check only the Created On date for filtering
       const createdDate = new Date(assessment.createdOn);
+      
       if (!isNaN(createdDate.getTime())) {
-        let createdInRange = true;
-        
-        // Check if created date is after start date (if provided)
+        // Check if created date is within the specified range
         if (startDateTime && createdDate < startDateTime) {
-          createdInRange = false;
+          matchesDateRange = false;
         }
-        
-        // Check if created date is before end date (if provided)  
         if (endDateTime && createdDate > endDateTime) {
-          createdInRange = false;
+          matchesDateRange = false;
         }
-        
-        if (createdInRange) {
-          assessmentMatches = true;
-        }
+      } else {
+        // If created date is invalid, exclude from results
+        matchesDateRange = false;
       }
-      
-      // Parse submitted date (for completed assessments)
-      if (assessment.submittedOn && assessment.submittedOn !== '-') {
-        const submittedDate = new Date(assessment.submittedOn);
-        if (!isNaN(submittedDate.getTime())) {
-          let submittedInRange = true;
-          
-          // Check if submitted date is after start date (if provided)
-          if (startDateTime && submittedDate < startDateTime) {
-            submittedInRange = false;
-          }
-          
-          // Check if submitted date is before end date (if provided)
-          if (endDateTime && submittedDate > endDateTime) {
-            submittedInRange = false;
-          }
-          
-          if (submittedInRange) {
-            assessmentMatches = true;
-          }
-        }
-      }
-      
-      matchesDateRange = assessmentMatches;
     }
 
     // Column-based filtering
