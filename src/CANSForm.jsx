@@ -86,8 +86,23 @@ export default function CANSForm({ overview = demoOverview, sections = demoSecti
   const [badgePageIndex, setBadgePageIndex] = useState(0);
 
   // Generate assessment ID immediately (or use from draftData)
+  const generateCANSId = () => {
+    const stored = localStorage.getItem('assessments');
+    const assessments = stored ? JSON.parse(stored) : [];
+    const cansAssessments = assessments.filter(a => a.type === 'CANS');
+    const maxId = cansAssessments.reduce((max, assessment) => {
+      const match = assessment.id.match(/CANS-(\d+)/);
+      if (match) {
+        const num = parseInt(match[1]);
+        return num > max ? num : max;
+      }
+      return max;
+    }, 0);
+    return `CANS-${String(maxId + 1).padStart(3, '0')}`;
+  };
+  
   const [assessmentId] = useState(() => {
-    const id = draftData?.id || `CANS-${Date.now()}`;
+    const id = draftData?.id || generateCANSId();
     console.log('🔑 CANS Assessment ID generated:', id);
     return id;
   });

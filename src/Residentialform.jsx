@@ -634,7 +634,24 @@ function App({ onClose, onSave, draftData }) {
   const [dateError, setDateError] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [hasAnsweredQuestion, setHasAnsweredQuestion] = useState(false);
-  const [assessmentId] = useState(() => draftData?.id || `RES-${Date.now()}`);
+  
+  // Generate Assessment ID immediately when form opens
+  const generateResiId = () => {
+    const stored = localStorage.getItem('assessments');
+    const assessments = stored ? JSON.parse(stored) : [];
+    const resiAssessments = assessments.filter(a => a.type === 'Residential');
+    const maxId = resiAssessments.reduce((max, assessment) => {
+      const match = assessment.id.match(/Resi-(\d+)/);
+      if (match) {
+        const num = parseInt(match[1]);
+        return num > max ? num : max;
+      }
+      return max;
+    }, 0);
+    return `Resi-${String(maxId + 1).padStart(3, '0')}`;
+  };
+  
+  const [assessmentId] = useState(() => draftData?.id || generateResiId());
 
   // Load draft data when component mounts
   useEffect(() => {

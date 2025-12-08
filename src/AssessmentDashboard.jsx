@@ -30,6 +30,52 @@ export default function AssessmentDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
 
+  // ID generation functions
+  const generateCANSId = () => {
+    const stored = localStorage.getItem('assessments');
+    const assessments = stored ? JSON.parse(stored) : [];
+    const cansAssessments = assessments.filter(a => a.type === 'CANS');
+    const maxId = cansAssessments.reduce((max, assessment) => {
+      const match = assessment.id.match(/CANS-(\d+)/);
+      if (match) {
+        const num = parseInt(match[1]);
+        return num > max ? num : max;
+      }
+      return max;
+    }, 0);
+    return `CANS-${String(maxId + 1).padStart(3, '0')}`;
+  };
+
+  const generateFAREId = () => {
+    const stored = localStorage.getItem('assessments');
+    const assessments = stored ? JSON.parse(stored) : [];
+    const fareAssessments = assessments.filter(a => a.type === 'F.A.R.E');
+    const maxId = fareAssessments.reduce((max, assessment) => {
+      const match = assessment.id.match(/FARE-(\d+)/);
+      if (match) {
+        const num = parseInt(match[1]);
+        return num > max ? num : max;
+      }
+      return max;
+    }, 0);
+    return `FARE-${String(maxId + 1).padStart(3, '0')}`;
+  };
+
+  const generateResiId = () => {
+    const stored = localStorage.getItem('assessments');
+    const assessments = stored ? JSON.parse(stored) : [];
+    const resiAssessments = assessments.filter(a => a.type === 'Residential');
+    const maxId = resiAssessments.reduce((max, assessment) => {
+      const match = assessment.id.match(/Resi-(\d+)/);
+      if (match) {
+        const num = parseInt(match[1]);
+        return num > max ? num : max;
+      }
+      return max;
+    }, 0);
+    return `Resi-${String(maxId + 1).padStart(3, '0')}`;
+  };
+
   // Generic date parsing function that handles multiple date formats
   const parseDate = (dateString) => {
     if (!dateString) return null;
@@ -114,60 +160,25 @@ export default function AssessmentDashboard() {
   useEffect(() => {
     loadAssessments();
    
-    // Add test data if no assessments exist
-    const addTestDataIfNeeded = () => {
-      const stored = localStorage.getItem('assessments');
-      if (!stored || JSON.parse(stored).length === 0) {
-        console.log('📝 Adding test assessments for date filtering validation');
-        const testAssessments = [
-          {
-            id: 'TEST-001',
-            caseId: 'CASE-001',
-            type: 'CANS',
-            status: 'Completed',
-            createdBy: 'Test User',
-            createdOn: '12/01/2025, 10:00:00 AM',
-            submittedOn: '12/01/2025, 11:00:00 AM',
-            data: {}
-          },
-          {
-            id: 'TEST-002', 
-            caseId: 'CASE-002',
-            type: 'FARE',
-            status: 'In-progress',
-            createdBy: 'Test User',
-            createdOn: '12/03/2025, 2:30:15 PM',
-            submittedOn: null,
-            data: {}
-          },
-          {
-            id: 'TEST-003',
-            caseId: 'CASE-003', 
-            type: 'Residential',
-            status: 'In-progress',
-            createdBy: 'Test User',
-            createdOn: '12/05/2025, 9:45:22 AM',
-            submittedOn: null,
-            data: {}
-          },
-          {
-            id: 'TEST-004',
-            caseId: 'CASE-004',
-            type: 'CANS', 
-            status: 'Completed',
-            createdBy: 'Test User',
-            createdOn: '12/07/2025, 4:20:10 PM',
-            submittedOn: '12/07/2025, 4:45:00 PM',
-            data: {}
+    // Remove any existing test data
+    const removeTestData = () => {
+      try {
+        const stored = localStorage.getItem('assessments');
+        if (stored) {
+          const assessments = JSON.parse(stored);
+          const filteredAssessments = assessments.filter(a => !a.id?.startsWith('TEST-'));
+          if (filteredAssessments.length !== assessments.length) {
+            localStorage.setItem('assessments', JSON.stringify(filteredAssessments));
+            setAssessments(filteredAssessments);
+            console.log('✅ Test assessments removed');
           }
-        ];
-        localStorage.setItem('assessments', JSON.stringify(testAssessments));
-        setAssessments(testAssessments);
-        console.log('✅ Test assessments added:', testAssessments);
+        }
+      } catch (error) {
+        console.error('Error removing test data:', error);
       }
     };
     
-    addTestDataIfNeeded();
+    removeTestData();
    
     // Check URL hash for direct assessment links (from new tabs)
     const hash = window.location.hash;
@@ -396,6 +407,7 @@ export default function AssessmentDashboard() {
         second: '2-digit',
         hour12: true
       }),
+      createdTimestamp: existingAssessment?.createdTimestamp || Date.now(),
       submittedOn: data.status === 'Completed' 
         ? (existingAssessment?.submittedOn || new Date().toLocaleString('en-US', {
             month: '2-digit',
@@ -445,14 +457,31 @@ export default function AssessmentDashboard() {
   const handleFARESave = (data) => {
     console.log('🔍 handleFARESave called with data:', data);
     console.log('🔍 Is auto-saved?:', data.autoSaved);
+    console.log('🔍 yesNoResponses in data:', data.yesNoResponses);
+    console.log('🔍 Data.answers:', data.answers);
+    console.log('🔍 selectedDraft:', selectedDraft);
     
-    // Use existing ID from selectedDraft if available, otherwise create new one
-    const assessmentId = selectedDraft?.id || data.id || `${Math.floor(100000 + Math.random() * 900000)}`;
+    // Use existing ID from selectedDraft if available, otherwise generate new FARE ID
+    const assessmentId = selectedDraft?.id || data.id || generateFAREId();
    
     console.log('🔍 Assessment ID:', assessmentId);
     
     // Find existing assessment to preserve creation details
     const existingAssessment = assessments.find(a => a.id === assessmentId);
+
+    // Process Yes/No responses if available
+    let yesNoSummary = '';
+    if (data.yesNoResponses) {
+      console.log('🔍 Processing yesNoResponses:', data.yesNoResponses);
+      const yesCount = data.yesNoResponses.yes?.length || 0;
+      const noCount = data.yesNoResponses.no?.length || 0;
+      const yesWithComments = data.yesNoResponses.yes?.filter(r => r.hasInterviewerComment || r.hasYouthComment).length || 0;
+      const noWithComments = data.yesNoResponses.no?.filter(r => r.hasInterviewerComment || r.hasYouthComment).length || 0;
+      yesNoSummary = `${yesCount} Yes (${yesWithComments} with comments), ${noCount} No (${noWithComments} with comments)`;
+      console.log('🔍 Generated yesNoSummary:', yesNoSummary);
+    } else {
+      console.log('🔍 No yesNoResponses found in data');
+    }
    
     const newAssessment = {
       id: assessmentId,
@@ -469,6 +498,7 @@ export default function AssessmentDashboard() {
         second: '2-digit',
         hour12: true
       }),
+      createdTimestamp: existingAssessment?.createdTimestamp || Date.now(),
       submittedOn: (data.status === 'Completed') ? new Date().toLocaleString('en-US', {
         month: '2-digit',
         day: '2-digit',
@@ -480,10 +510,18 @@ export default function AssessmentDashboard() {
       }) : existingAssessment?.submittedOn || null,
       overview: data.overview,
       answers: data.answers,
+      yesNoResponses: data.yesNoResponses,
+      yesNoSummary: yesNoSummary,
       data: data
     };
    
+    console.log('🔍 FARE newAssessment object:', newAssessment);
+    console.log('🔍 FARE Before save - current assessments count:', assessments.length);
+    
     const saved = saveAssessment(newAssessment);
+    
+    console.log('🔍 FARE Save result:', saved);
+    console.log('🔍 FARE After save - current assessments count:', assessments.length);
    
     if (saved) {
       // ✅ FIXED: Only show alerts and close form for manual saves (not auto-saves)
@@ -514,8 +552,8 @@ export default function AssessmentDashboard() {
     console.log('🏠 handleResidentialSave called with data:', data);
     console.log('🏠 Is auto-saved?:', data.autoSaved);
     
-    // Use existing ID from selectedDraft if available, otherwise create new one
-    const assessmentId = selectedDraft?.id || data.id || `${Math.floor(100000 + Math.random() * 900000)}`;
+    // Use existing ID from selectedDraft if available, otherwise generate new Resi ID
+    const assessmentId = selectedDraft?.id || data.id || generateResiId();
    
     // Find existing assessment to preserve creation details
     const existingAssessment = assessments.find(a => a.id === assessmentId);
@@ -535,6 +573,7 @@ export default function AssessmentDashboard() {
         second: '2-digit',
         hour12: true
       }),
+      createdTimestamp: existingAssessment?.createdTimestamp || Date.now(),
       submittedOn: (data.status === 'Completed') ? new Date().toLocaleString('en-US', {
         month: '2-digit',
         day: '2-digit',
@@ -710,10 +749,24 @@ export default function AssessmentDashboard() {
    
     return matchesSearch && matchesDateRange && matchesFilter;
   }).sort((a, b) => {
-    // Sort by creation date - newest first
-    const dateA = new Date(a.createdOn);
-    const dateB = new Date(b.createdOn);
-    return dateB.getTime() - dateA.getTime();
+    // Sort by creation timestamp - newest first (most reliable)
+    const timestampA = a.createdTimestamp || 0;
+    const timestampB = b.createdTimestamp || 0;
+    
+    // If timestamps are equal, fall back to date parsing
+    if (timestampB === timestampA) {
+      const dateA = parseDate(a.createdOn) || new Date(0);
+      const dateB = parseDate(b.createdOn) || new Date(0);
+      
+      // If dates are equal, fall back to ID comparison (newer IDs first)
+      if (dateB.getTime() === dateA.getTime()) {
+        return (b.id || '').localeCompare(a.id || '');
+      }
+      
+      return dateB.getTime() - dateA.getTime();
+    }
+    
+    return timestampB - timestampA;
   });
 
   // Debug: Log filtered results
@@ -1234,6 +1287,7 @@ export default function AssessmentDashboard() {
                       </div>
                     )}
                   </th>
+                  <th style={{ minWidth: '200px' }}>Responses</th>
                 </tr>
               </thead>
               <tbody>
@@ -1328,11 +1382,20 @@ export default function AssessmentDashboard() {
                       <td>{assessment.createdOn || 'N/A'}</td>
                       <td>{assessment.createdBy || 'N/A'}</td>
                       <td>{assessment.submittedOn || '-'}</td>
+                      <td style={{ fontSize: '12px', maxWidth: '200px' }}>
+                        {assessment.type === 'F.A.R.E' && assessment.yesNoSummary ? (
+                          <div style={{ color: '#374151', lineHeight: '1.4' }}>
+                            {assessment.yesNoSummary}
+                          </div>
+                        ) : (
+                          <span style={{ color: '#9CA3AF' }}>-</span>
+                        )}
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7">
+                    <td colSpan="8">
                       <div className="empty-state">
                         <div className="empty-state-content">
                           <div className="empty-state-icon">

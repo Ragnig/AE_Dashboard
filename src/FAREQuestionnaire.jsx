@@ -772,7 +772,22 @@ const QUESTIONS = [
 
 export default function FAREQuestionnaire({ onSave, onClose, draftData }) {
   // Generate Assessment ID immediately when form opens
-  const [assessmentId] = useState(() => draftData?.id || `FARE-${Date.now()}`);
+  const generateFAREId = () => {
+    const stored = localStorage.getItem('assessments');
+    const assessments = stored ? JSON.parse(stored) : [];
+    const fareAssessments = assessments.filter(a => a.type === 'F.A.R.E');
+    const maxId = fareAssessments.reduce((max, assessment) => {
+      const match = assessment.id.match(/FARE-(\d+)/);
+      if (match) {
+        const num = parseInt(match[1]);
+        return num > max ? num : max;
+      }
+      return max;
+    }, 0);
+    return `FARE-${String(maxId + 1).padStart(3, '0')}`;
+  };
+  
+  const [assessmentId] = useState(() => draftData?.id || generateFAREId());
   
   const [formData, setFormData] = useState({});
   const [effectiveDate, setEffectiveDate] = useState('');
@@ -1006,16 +1021,27 @@ export default function FAREQuestionnaire({ onSave, onClose, draftData }) {
         }
       }
       console.log('🔍 FARE: Unanswered questions:', unansweredQuestions);
+      console.log('🔍 FARE: Unanswered questions count:', unansweredQuestions.length);
       if (unansweredQuestions.length > 0) {
-        console.log('🔍 FARE: Showing missed questions modal');
+        console.log('🔍 FARE: Showing missed questions modal - EARLY RETURN!');
         setMissedQuestions(unansweredQuestions);
         setShowMissedQuestionsModal(true);
         return;
       }
+      console.log('🔍 FARE: No unanswered questions, continuing...');
     }
+    
+    console.log('🔍 FARE: Processing option selection for questionId:', questionId, 'value:', value);
+    console.log('🔍 FARE: formData[questionId]:', formData[questionId]);
+    
     const current = formData[questionId]?.responses || [];
+    console.log('🔍 FARE: current responses:', current);
+    
     const isExclusiveOption = value === 'No' || value === 'Not Applicable' || value.includes('Not Applicable');
     const hasExclusiveOption = current.some(v => v === 'No' || v === 'Not Applicable' || v.includes('Not Applicable'));
+    
+    console.log('🔍 FARE: isExclusiveOption:', isExclusiveOption, 'hasExclusiveOption:', hasExclusiveOption);
+    
     let updated;
     if (isExclusiveOption) {
       updated = current.includes(value) ? [] : [value];
@@ -1026,6 +1052,10 @@ export default function FAREQuestionnaire({ onSave, onClose, draftData }) {
         updated = current.includes(value) ? current.filter(v => v !== value) : [...current, value];
       }
     }
+    
+    console.log('🔍 FARE: updated responses calculated:', updated);
+    console.log('🔍 FARE: Checking if updated.length === 0:', updated.length === 0);
+    
     const question = QUESTIONS.find(q => q.id === questionId);
     const option = question?.options.find(o => o.value === value);
     const optionSettings = option ? {
@@ -1036,7 +1066,11 @@ export default function FAREQuestionnaire({ onSave, onClose, draftData }) {
       allowInterviewerComment: option.allowInterviewerComment || false,
       requireInterviewerComment: option.requireInterviewerComment || false
     } : {};
+    
+    console.log('🔍 FARE: optionSettings:', optionSettings);
+    
     if (updated.length === 0) {
+      console.log('🔍 FARE: EARLY RETURN - updated.length === 0');
       setFormData(prev => {
         const newData = {...prev};
         delete newData[questionId];
@@ -1054,6 +1088,8 @@ export default function FAREQuestionnaire({ onSave, onClose, draftData }) {
       setUnsavedChanges(true);
       return;
     }
+    
+    console.log('🔍 FARE: Passed updated.length check, continuing...');
     const currentlyHasEndInterviewOption = current.some(val => {
       const opt = question?.options.find(o => o.value === val);
       return opt?.endInterview;
@@ -1062,7 +1098,13 @@ export default function FAREQuestionnaire({ onSave, onClose, draftData }) {
       const opt = question?.options.find(o => o.value === val);
       return opt?.endInterview;
     });
+    
+    console.log('🔍 FARE: currentlyHasEndInterviewOption:', currentlyHasEndInterviewOption);
+    console.log('🔍 FARE: newWillHaveEndInterviewOption:', newWillHaveEndInterviewOption);
+    console.log('🔍 FARE: questionId check:', questionId === 'clinical_exception' || questionId === 'child_refusal');
+    
     if (currentlyHasEndInterviewOption && !newWillHaveEndInterviewOption && (questionId === 'clinical_exception' || questionId === 'child_refusal')) {
+      console.log('🔍 FARE: EARLY RETURN - endInterview option change');
       const clearedData = {};
       if (formData['clinical_exception'] && questionId !== 'clinical_exception') {
         clearedData['clinical_exception'] = formData['clinical_exception'];
@@ -1089,7 +1131,11 @@ export default function FAREQuestionnaire({ onSave, onClose, draftData }) {
       setUnsavedChanges(true);
       return;
     }
+    
+    console.log('🔍 FARE: Passed endInterview check, checking optionSettings.endInterview:', optionSettings.endInterview);
+    
     if (optionSettings.endInterview && !current.includes(value)) {
+      console.log('🔍 FARE: EARLY RETURN - endInterview option selected');
       const clearedData = {};
       if (formData['clinical_exception']) {
         clearedData['clinical_exception'] = formData['clinical_exception'];
@@ -1107,11 +1153,48 @@ export default function FAREQuestionnaire({ onSave, onClose, draftData }) {
           }
         }
       };
+      
+      console.log('🔍 FARE: clearedData structure:', clearedData);
+      console.log('🔍 FARE: clearedData[questionId]:', clearedData[questionId]);
+      console.log('🔍 FARE: responses saved:', clearedData[questionId].responses);
+      
       setFormData(clearedData);
       setProceedBlocked({});
       setInterviewEnded(true);
       setEndedReason(`Interview ended by rule: Question ${question.section} - Selected "${value}"`);
       setUnsavedChanges(true);
+      
+      // Save to dashboard when endInterview option is selected
+      console.log('🟢 FARE: Saving to dashboard - endInterview option selected');
+      
+      const todayIso = new Date().toISOString().split('T')[0];
+      const saveData = {
+        id: assessmentId,
+        caseId: caseId || "N/A",
+        status: "In-progress",
+        createdBy: "Current User",
+        overview: {
+          caseId: caseId || "N/A",
+          childName: childName || "",
+          caseWorkerName: caseWorkerName || "",
+          dateCompleted: todayIso
+        },
+        answers: clearedData,
+        autoSaved: true
+      };
+      
+      console.log('🔍 FARE endInterview saveData:', saveData);
+      
+      // Save immediately
+      if (typeof onSave === 'function') {
+        console.log('🔍 FARE: About to call onSave for endInterview');
+        setTimeout(() => {
+          onSave(saveData);
+        }, 100);
+      } else {
+        console.log('🚨 FARE: onSave not available for endInterview!');
+      }
+      
       setTimeout(() => setShowEndInterviewWarning(true), 100);
       return;
     }
@@ -1133,6 +1216,10 @@ export default function FAREQuestionnaire({ onSave, onClose, draftData }) {
     }
     
     console.log('🔍 FARE: About to update form data:', { questionId, value, updated, current });
+    console.log('🔍 FARE: updated.length:', updated.length);
+    console.log('🔍 FARE: updated array:', updated);
+    console.log('🔍 FARE: questionId:', questionId);
+    console.log('🔍 FARE: value selected:', value);
     
     setFormData(prev => {
       const updatedFormData = {
@@ -1152,54 +1239,98 @@ export default function FAREQuestionnaire({ onSave, onClose, draftData }) {
         }
       };
       
-      // Track that user has answered at least one question
-      if (updated.length > 0) {
-        const wasFirstAnswer = !hasAnsweredQuestion;
-        setHasAnsweredQuestion(true);
-        
-        console.log('🔍 FARE Question answered:', {
-          questionId,
-          value,
-          wasFirstAnswer,
-          hasOnSave: typeof onSave === 'function',
-          updated,
-          updatedFormData
-        });
-        
-        // Save to dashboard when first question is answered
-        if (wasFirstAnswer && typeof onSave === 'function') {
-          console.log('🟢 FARE: Saving to dashboard - first question answered');
-          
-          const todayIso = new Date().toISOString().split('T')[0];
-          
-          // Use the updated form data directly
-          const saveData = {
-            id: assessmentId,
-            caseId: caseId || "N/A",
-            status: "In-progress",
-            createdBy: "Current User",
-            overview: {
-              caseId: caseId || "N/A",
-              childName: childName || "",
-              caseWorkerName: caseWorkerName || "",
-              dateCompleted: todayIso
-            },
-            answers: updatedFormData,
-            autoSaved: true
-          };
-          
-          console.log('🔍 FARE saveData:', saveData);
-          
-          // Save immediately with updated data
-          setTimeout(() => {
-            console.log('🔍 FARE: About to call onSave');
-            onSave(saveData);
-          }, 100);
-        }
-      }
-      
+      console.log('🔍 FARE: After setFormData, updated form data:', updatedFormData);
       return updatedFormData;
     });
+    
+    console.log('🔍 FARE: Checking if updated.length > 0:', updated.length > 0);
+    console.log('🔍 FARE: About to enter if (updated.length > 0) block...');
+    
+    // Track that user has answered at least one question (moved outside setFormData)
+    if (updated.length > 0) {
+      const wasFirstAnswer = !hasAnsweredQuestion;
+      console.log('🔍 FARE Debug - hasAnsweredQuestion before:', hasAnsweredQuestion);
+      console.log('🔍 FARE Debug - wasFirstAnswer:', wasFirstAnswer);
+      console.log('🔍 FARE Debug - onSave type:', typeof onSave);
+      console.log('🔍 FARE Debug - onSave function:', onSave);
+      
+      setHasAnsweredQuestion(true);
+      
+      console.log('🔍 FARE Question answered:', {
+        questionId,
+        value,
+        wasFirstAnswer,
+        hasOnSave: typeof onSave === 'function',
+        updated
+      });
+      
+      // Check if this assessment exists in localStorage (has been saved before)
+      const assessments = JSON.parse(localStorage.getItem('assessments') || '[]');
+      const existingAssessment = assessments.find(a => a.id === assessmentId);
+      const needsToSave = (wasFirstAnswer || !existingAssessment) && typeof onSave === 'function';
+      
+      console.log('🔍 FARE Save check:', {
+        wasFirstAnswer,
+        existingAssessment: !!existingAssessment,
+        needsToSave,
+        assessmentId
+      });
+      
+      // Save to dashboard when first question is answered OR if assessment doesn't exist yet
+      if (needsToSave) {
+        console.log('🟢 FARE: Saving to dashboard - question answered');
+        
+        const todayIso = new Date().toISOString().split('T')[0];
+        
+        // Create updated form data for saving (outside of setFormData scope)
+        const saveFormData = {
+          ...formData,
+          [questionId]: {
+            ...formData[questionId],
+            responses: updated,
+            options: {
+              ...newOptions,
+              ...(updated.includes(value) ? {
+                [value]: {
+                  ...newOptions[value],
+                  ...optionSettings
+                }
+              } : {})
+            }
+          }
+        };
+        
+        // Use the updated form data directly
+        const saveData = {
+          id: assessmentId,
+          caseId: caseId || "N/A",
+          status: "In-progress",
+          createdBy: "Current User",
+          overview: {
+            caseId: caseId || "N/A",
+            childName: childName || "",
+            caseWorkerName: caseWorkerName || "",
+            dateCompleted: todayIso
+          },
+          answers: saveFormData,
+          autoSaved: true
+        };
+        
+        console.log('🔍 FARE saveData:', saveData);
+        
+        // Save immediately with updated data
+        setTimeout(() => {
+          console.log('🔍 FARE: About to call onSave');
+          onSave(saveData);
+        }, 100);
+      } else {
+        console.log('❌ FARE: Not saving because:', {
+          wasFirstAnswer,
+          existingAssessment: !!existingAssessment,
+          hasOnSaveFunction: typeof onSave === 'function'
+        });
+      }
+    }
     
     setUnsavedChanges(true);
     if (optionSettings.requireYouthComment || optionSettings.requireInterviewerComment) {
