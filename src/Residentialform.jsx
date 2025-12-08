@@ -634,7 +634,24 @@ function App({ onClose, onSave, draftData }) {
   const [dateError, setDateError] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [hasAnsweredQuestion, setHasAnsweredQuestion] = useState(false);
-  const [assessmentId] = useState(() => draftData?.id || `RES-${Date.now()}`);
+  
+  // Generate Assessment ID immediately when form opens
+  const generateResiId = () => {
+    const stored = localStorage.getItem('assessments');
+    const assessments = stored ? JSON.parse(stored) : [];
+    const resiAssessments = assessments.filter(a => a.type === 'Residential');
+    const maxId = resiAssessments.reduce((max, assessment) => {
+      const match = assessment.id.match(/Resi-(\d+)/);
+      if (match) {
+        const num = parseInt(match[1]);
+        return num > max ? num : max;
+      }
+      return max;
+    }, 0);
+    return `Resi-${String(maxId + 1).padStart(3, '0')}`;
+  };
+  
+  const [assessmentId] = useState(() => draftData?.id || generateResiId());
 
   // Load draft data when component mounts
   useEffect(() => {
@@ -672,12 +689,85 @@ function App({ onClose, onSave, draftData }) {
     console.log("isSubmitted state changed to:", isSubmitted);
   }, [isSubmitted]);
 
+  // Add beforeunload handler for auto-save
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (!hasAnsweredQuestion) {
+        // User hasn't answered any questions, discard the form
+        console.log('🗑️ Residential: Discarding form on unload - no questions answered');
+        const existingAssessments = JSON.parse(localStorage.getItem('assessments') || '[]');
+        const filteredAssessments = existingAssessments.filter(a => a.id !== assessmentId);
+        localStorage.setItem('assessments', JSON.stringify(filteredAssessments));
+        return;
+      }
+      
+      if (hasAnsweredQuestion && !isSubmitted) {
+        console.log('🚨 Residential: beforeunload triggered - saving assessment');
+        
+        const saveData = {
+          id: assessmentId,
+          caseId: formData.contract_number || 'N/A', // Use caseId to match dashboard expectations
+          contract_number: formData.contract_number || 'N/A',
+          provider: formData.provider || 'N/A', 
+          date: formData.date || new Date().toISOString().split('T')[0],
+          status: 'In-progress',
+          type: 'Residential',
+          created_on: new Date().toISOString(),
+          created_by: 'Current User', // You may want to get this from auth context
+          submitted_on: null,
+          data: formData
+        };
+        
+        // Save to localStorage
+        const existingAssessments = JSON.parse(localStorage.getItem('assessments') || '[]');
+        const assessmentIndex = existingAssessments.findIndex(a => a.id === assessmentId);
+        
+        if (assessmentIndex !== -1) {
+          existingAssessments[assessmentIndex] = saveData;
+        } else {
+          existingAssessments.push(saveData);
+        }
+        
+        localStorage.setItem('assessments', JSON.stringify(existingAssessments));
+        console.log('💾 Residential: Assessment auto-saved to localStorage', saveData);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasAnsweredQuestion, isSubmitted, assessmentId, formData]);
+
   const updateField = (name, value) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const updatedFormData = { ...formData, [name]: value };
+    setFormData(updatedFormData);
     
     // Track that user has answered at least one question
     if (value && value.toString().trim() !== '' && !hasAnsweredQuestion) {
+      const wasFirstAnswer = !hasAnsweredQuestion;
       setHasAnsweredQuestion(true);
+      
+      // Save to dashboard when first question is answered
+      if (wasFirstAnswer && typeof onSave === 'function') {
+        console.log('🟢 Residential: Saving to dashboard - first question answered');
+        const saveData = {
+          id: assessmentId,
+          caseId: updatedFormData.contract_number || 'N/A', // Use caseId to match dashboard expectations
+          contract_number: updatedFormData.contract_number || 'N/A',
+          provider: updatedFormData.provider || 'N/A', 
+          date: updatedFormData.date || new Date().toISOString().split('T')[0],
+          status: 'In-progress',
+          type: 'Residential',
+          created_on: new Date().toISOString(),
+          created_by: 'Current User',
+          submitted_on: null,
+          data: updatedFormData,
+          autoSaved: true // Mark as auto-save so form doesn't close
+        };
+        onSave(saveData);
+      }
     }
   };
 
@@ -864,7 +954,8 @@ function App({ onClose, onSave, draftData }) {
       provider: formData.provider || 'N/A', 
       date: formData.date || new Date().toISOString().split('T')[0],
       status: 'Completed', // Set status to completed on submit
-      data: formData
+      data: formData,
+      autoSaved: true // Mark as auto-save so form doesn't close (will show success screen instead)
     };
 
     console.log("Calling onSave with:", saveData);
@@ -882,6 +973,43 @@ function App({ onClose, onSave, draftData }) {
 
   const handleReturnToDashboard = () => {
     console.log("Returning to dashboard...");
+    
+    // Auto-save if user has answered questions but hasn't submitted
+    if (hasAnsweredQuestion && !isSubmitted) {
+      console.log('💾 Residential: Auto-saving before returning to dashboard');
+      
+      const saveData = {
+        id: assessmentId,
+        caseId: formData.contract_number || 'N/A', // Use caseId to match dashboard expectations
+        contract_number: formData.contract_number || 'N/A',
+        provider: formData.provider || 'N/A', 
+        date: formData.date || new Date().toISOString().split('T')[0],
+        status: 'In-progress',
+        type: 'Residential',
+        created_on: new Date().toISOString(),
+        created_by: 'Current User', // You may want to get this from auth context
+        submitted_on: null,
+        data: formData
+      };
+      
+      // Save to localStorage
+      const existingAssessments = JSON.parse(localStorage.getItem('assessments') || '[]');
+      const assessmentIndex = existingAssessments.findIndex(a => a.id === assessmentId);
+      
+      if (assessmentIndex !== -1) {
+        existingAssessments[assessmentIndex] = saveData;
+      } else {
+        existingAssessments.push(saveData);
+      }
+      
+      localStorage.setItem('assessments', JSON.stringify(existingAssessments));
+      console.log('✅ Residential: Assessment auto-saved before dashboard return');
+      
+      // Also call onSave if available
+      if (onSave) {
+        onSave(saveData);
+      }
+    }
     
     // Close the form and return to dashboard
     if (onClose) {

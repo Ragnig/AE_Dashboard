@@ -1,7 +1,11 @@
 import AssessmentDashboard from './AssessmentDashboard'
 
 function App() {
-  return <AssessmentDashboard />
+  return (
+    <div className="App">
+      <AssessmentDashboard />
+    </div>
+  );
 }
 
-export default App
+export default App;

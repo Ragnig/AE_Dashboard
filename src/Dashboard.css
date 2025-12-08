@@ -1092,13 +1092,32 @@ body {
   min-width: 140px;
 }
 
+.clear-date-filter {
+  padding: 6px 10px;
+  background: transparent;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: normal;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+}
+
+.clear-date-filter:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
 .date-input:focus {
   outline: none;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.date-range-info {
+.date-filter-info {
   font-size: 13px;
   color: #059669;
   background: #ecfdf5;
@@ -1143,5 +1162,10 @@ body {
   
   .date-input {
     width: 100%;
+  }
+  
+  .clear-date-filter {
+    margin-left: 0;
+    margin-top: 8px;
   }
 }

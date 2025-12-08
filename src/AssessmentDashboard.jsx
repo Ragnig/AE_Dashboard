@@ -22,7 +22,6 @@ export default function AssessmentDashboard() {
   
   // Date range filter states
   const [dateRangeFilter, setDateRangeFilter] = useState({
-    enabled: false,
     startDate: '',
     endDate: ''
   });
@@ -30,9 +29,156 @@ export default function AssessmentDashboard() {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
+
+  // ID generation functions
+  const generateCANSId = () => {
+    const stored = localStorage.getItem('assessments');
+    const assessments = stored ? JSON.parse(stored) : [];
+    const cansAssessments = assessments.filter(a => a.type === 'CANS');
+    const maxId = cansAssessments.reduce((max, assessment) => {
+      const match = assessment.id.match(/CANS-(\d+)/);
+      if (match) {
+        const num = parseInt(match[1]);
+        return num > max ? num : max;
+      }
+      return max;
+    }, 0);
+    return `CANS-${String(maxId + 1).padStart(3, '0')}`;
+  };
+
+  const generateFAREId = () => {
+    const stored = localStorage.getItem('assessments');
+    const assessments = stored ? JSON.parse(stored) : [];
+    const fareAssessments = assessments.filter(a => a.type === 'F.A.R.E');
+    const maxId = fareAssessments.reduce((max, assessment) => {
+      const match = assessment.id.match(/FARE-(\d+)/);
+      if (match) {
+        const num = parseInt(match[1]);
+        return num > max ? num : max;
+      }
+      return max;
+    }, 0);
+    return `FARE-${String(maxId + 1).padStart(3, '0')}`;
+  };
+
+  const generateResiId = () => {
+    const stored = localStorage.getItem('assessments');
+    const assessments = stored ? JSON.parse(stored) : [];
+    const resiAssessments = assessments.filter(a => a.type === 'Residential');
+    const maxId = resiAssessments.reduce((max, assessment) => {
+      const match = assessment.id.match(/Resi-(\d+)/);
+      if (match) {
+        const num = parseInt(match[1]);
+        return num > max ? num : max;
+      }
+      return max;
+    }, 0);
+    return `Resi-${String(maxId + 1).padStart(3, '0')}`;
+  };
+
+  // Generic date parsing function that handles multiple date formats
+  const parseDate = (dateString) => {
+    if (!dateString) return null;
+    
+    try {
+      // Handle various date formats
+      let parsedDate = null;
+      
+      // Format: "12/05/2025, 10:49:35 AM" (localeString format)
+      if (dateString.includes(',')) {
+        const datePart = dateString.split(',')[0].trim();
+        parsedDate = new Date(datePart);
+      }
+      // Format: "2025-12-05" (ISO date format)
+      else if (dateString.includes('-') && dateString.length === 10) {
+        parsedDate = new Date(dateString + 'T00:00:00');
+      }
+      // Format: "2025-12-05T10:49:35.000Z" (ISO datetime format)
+      else if (dateString.includes('T')) {
+        parsedDate = new Date(dateString);
+      }
+      // Try direct parsing as fallback
+      else {
+        parsedDate = new Date(dateString);
+      }
+      
+      // Validate the parsed date
+      if (!isNaN(parsedDate.getTime())) {
+        console.log('✅ Date parsed successfully:', dateString, '→', parsedDate.toISOString().split('T')[0]);
+        return parsedDate;
+      }
+    } catch (error) {
+      console.warn('❌ Failed to parse date:', dateString, error);
+    }
+    
+    console.warn('❌ Invalid date string:', dateString);
+    return null;
+  };
+
+  // Generic date range checking function
+  const isDateInRange = (dateToCheck, startDate, endDate) => {
+    console.log('🔍 Checking date range:', { dateToCheck, startDate, endDate });
+    
+    const checkDate = parseDate(dateToCheck);
+    if (!checkDate) {
+      console.log('❌ Failed to parse dateToCheck:', dateToCheck);
+      return false;
+    }
+    
+    // Normalize to just the date part (ignore time)
+    const checkDateOnly = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate());
+    console.log('📅 Normalized check date:', checkDateOnly.toISOString().split('T')[0]);
+    
+    let isInRange = true;
+    
+    // Check start date (inclusive)
+    if (startDate && startDate.trim() !== '') {
+      const startDateTime = new Date(startDate + 'T00:00:00');
+      const startDateOnly = new Date(startDateTime.getFullYear(), startDateTime.getMonth(), startDateTime.getDate());
+      console.log('📅 Start date boundary:', startDateOnly.toISOString().split('T')[0]);
+      if (checkDateOnly < startDateOnly) {
+        console.log('❌ Date is before start date');
+        isInRange = false;
+      }
+    }
+    
+    // Check end date (inclusive)
+    if (endDate && endDate.trim() !== '') {
+      const endDateTime = new Date(endDate + 'T23:59:59');
+      const endDateOnly = new Date(endDateTime.getFullYear(), endDateTime.getMonth(), endDateTime.getDate());
+      console.log('📅 End date boundary:', endDateOnly.toISOString().split('T')[0]);
+      if (checkDateOnly > endDateOnly) {
+        console.log('❌ Date is after end date');
+        isInRange = false;
+      }
+    }
+    
+    console.log('✅ Date range result:', isInRange);
+    return isInRange;
+  };
  
   useEffect(() => {
     loadAssessments();
+   
+    // Remove any existing test data
+    const removeTestData = () => {
+      try {
+        const stored = localStorage.getItem('assessments');
+        if (stored) {
+          const assessments = JSON.parse(stored);
+          const filteredAssessments = assessments.filter(a => !a.id?.startsWith('TEST-'));
+          if (filteredAssessments.length !== assessments.length) {
+            localStorage.setItem('assessments', JSON.stringify(filteredAssessments));
+            setAssessments(filteredAssessments);
+            console.log('✅ Test assessments removed');
+          }
+        }
+      } catch (error) {
+        console.error('Error removing test data:', error);
+      }
+    };
+    
+    removeTestData();
    
     // Check URL hash for direct assessment links (from new tabs)
     const hash = window.location.hash;
@@ -193,9 +339,9 @@ export default function AssessmentDashboard() {
     setSearchQuery('');
     setActiveDropdown(null);
     setDropdownSearch('');
+  
     setCurrentPage(1);
     setDateRangeFilter({
-      enabled: false,
       startDate: '',
       endDate: ''
     });
@@ -232,6 +378,7 @@ export default function AssessmentDashboard() {
  
   const handleCANSSave = (data) => {
     console.log('🔵 handleCANSSave called with data:', data);
+    console.log('🔵 Is auto-saved?:', data.autoSaved);
     
     // Use existing ID from selectedDraft if available, otherwise use data.id
     const assessmentId = selectedDraft?.id || data.id || `CANS-${Date.now()}`;
@@ -260,6 +407,7 @@ export default function AssessmentDashboard() {
         second: '2-digit',
         hour12: true
       }),
+      createdTimestamp: existingAssessment?.createdTimestamp || Date.now(),
       submittedOn: data.status === 'Completed' 
         ? (existingAssessment?.submittedOn || new Date().toLocaleString('en-US', {
             month: '2-digit',
@@ -307,11 +455,33 @@ export default function AssessmentDashboard() {
   };
  
   const handleFARESave = (data) => {
-    // Use existing ID from selectedDraft if available, otherwise create new one
-    const assessmentId = selectedDraft?.id || data.id || `${Math.floor(100000 + Math.random() * 900000)}`;
+    console.log('🔍 handleFARESave called with data:', data);
+    console.log('🔍 Is auto-saved?:', data.autoSaved);
+    console.log('🔍 yesNoResponses in data:', data.yesNoResponses);
+    console.log('🔍 Data.answers:', data.answers);
+    console.log('🔍 selectedDraft:', selectedDraft);
+    
+    // Use existing ID from selectedDraft if available, otherwise generate new FARE ID
+    const assessmentId = selectedDraft?.id || data.id || generateFAREId();
    
+    console.log('🔍 Assessment ID:', assessmentId);
+    
     // Find existing assessment to preserve creation details
     const existingAssessment = assessments.find(a => a.id === assessmentId);
+
+    // Process Yes/No responses if available
+    let yesNoSummary = '';
+    if (data.yesNoResponses) {
+      console.log('🔍 Processing yesNoResponses:', data.yesNoResponses);
+      const yesCount = data.yesNoResponses.yes?.length || 0;
+      const noCount = data.yesNoResponses.no?.length || 0;
+      const yesWithComments = data.yesNoResponses.yes?.filter(r => r.hasInterviewerComment || r.hasYouthComment).length || 0;
+      const noWithComments = data.yesNoResponses.no?.filter(r => r.hasInterviewerComment || r.hasYouthComment).length || 0;
+      yesNoSummary = `${yesCount} Yes (${yesWithComments} with comments), ${noCount} No (${noWithComments} with comments)`;
+      console.log('🔍 Generated yesNoSummary:', yesNoSummary);
+    } else {
+      console.log('🔍 No yesNoResponses found in data');
+    }
    
     const newAssessment = {
       id: assessmentId,
@@ -328,6 +498,7 @@ export default function AssessmentDashboard() {
         second: '2-digit',
         hour12: true
       }),
+      createdTimestamp: existingAssessment?.createdTimestamp || Date.now(),
       submittedOn: (data.status === 'Completed') ? new Date().toLocaleString('en-US', {
         month: '2-digit',
         day: '2-digit',
@@ -339,10 +510,18 @@ export default function AssessmentDashboard() {
       }) : existingAssessment?.submittedOn || null,
       overview: data.overview,
       answers: data.answers,
+      yesNoResponses: data.yesNoResponses,
+      yesNoSummary: yesNoSummary,
       data: data
     };
    
+    console.log('🔍 FARE newAssessment object:', newAssessment);
+    console.log('🔍 FARE Before save - current assessments count:', assessments.length);
+    
     const saved = saveAssessment(newAssessment);
+    
+    console.log('🔍 FARE Save result:', saved);
+    console.log('🔍 FARE After save - current assessments count:', assessments.length);
    
     if (saved) {
       // ✅ FIXED: Only show alerts and close form for manual saves (not auto-saves)
@@ -370,8 +549,11 @@ export default function AssessmentDashboard() {
   };
  
   const handleResidentialSave = (data) => {
-    // Use existing ID from selectedDraft if available, otherwise create new one
-    const assessmentId = selectedDraft?.id || data.id || `${Math.floor(100000 + Math.random() * 900000)}`;
+    console.log('🏠 handleResidentialSave called with data:', data);
+    console.log('🏠 Is auto-saved?:', data.autoSaved);
+    
+    // Use existing ID from selectedDraft if available, otherwise generate new Resi ID
+    const assessmentId = selectedDraft?.id || data.id || generateResiId();
    
     // Find existing assessment to preserve creation details
     const existingAssessment = assessments.find(a => a.id === assessmentId);
@@ -391,6 +573,7 @@ export default function AssessmentDashboard() {
         second: '2-digit',
         hour12: true
       }),
+      createdTimestamp: existingAssessment?.createdTimestamp || Date.now(),
       submittedOn: (data.status === 'Completed') ? new Date().toLocaleString('en-US', {
         month: '2-digit',
         day: '2-digit',
@@ -427,9 +610,10 @@ export default function AssessmentDashboard() {
     }
   };
  
-  const handleCloseForm = () => {
+  const handleCloseForm = async () => {
     console.log('🔍 handleCloseForm called');
     console.log('🔍 Current activeForm:', activeForm);
+    
     setActiveForm(null);
     setSelectedDraft(null);
     console.log('🔍 Setting activeForm to null');
@@ -439,7 +623,8 @@ export default function AssessmentDashboard() {
   };
  
   const getStatusClass = (status) => {
-    switch(status.toLowerCase()) {
+    const statusLower = (status || '').toLowerCase();
+    switch(statusLower) {
       case 'completed':
         return 'status-completed';
       case 'in-progress':
@@ -450,7 +635,8 @@ export default function AssessmentDashboard() {
   };
  
   const getStatusIcon = (status) => {
-    switch(status.toLowerCase()) {
+    const statusLower = (status || '').toLowerCase();
+    switch(statusLower) {
       case 'completed':
         return <CheckCircle className="icon-sm" />;
       case 'in-progress':
@@ -463,27 +649,55 @@ export default function AssessmentDashboard() {
   const filteredAssessments = assessments.filter(assessment => {
     // Search functionality
     const matchesSearch = searchQuery === '' ||
-      assessment.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      assessment.caseId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      assessment.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      assessment.createdBy.toLowerCase().includes(searchQuery.toLowerCase());
+      (assessment.id || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (assessment.caseId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (assessment.type || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (assessment.createdBy || '').toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Date range filter for completed assessments
+    // Date range filter - simplified logic
     let matchesDateRange = true;
-    if (dateRangeFilter.enabled && dateRangeFilter.startDate && dateRangeFilter.endDate) {
-      // Only apply to completed assessments
-      if (assessment.status.toLowerCase() === 'completed' && assessment.submittedOn && assessment.submittedOn !== '-') {
-        const submittedDate = new Date(assessment.submittedOn);
-        const startDate = new Date(dateRangeFilter.startDate);
-        const endDate = new Date(dateRangeFilter.endDate);
-        
-        // Set end date to end of day for inclusive range
-        endDate.setHours(23, 59, 59, 999);
-        
-        matchesDateRange = submittedDate >= startDate && submittedDate <= endDate;
-      } else if (assessment.status.toLowerCase() !== 'completed') {
-        // If date range filter is active, exclude non-completed assessments
+    if (dateRangeFilter.startDate || dateRangeFilter.endDate) {
+      console.log('🔍 Date filtering for assessment:', assessment.id, {
+        startDate: dateRangeFilter.startDate,
+        endDate: dateRangeFilter.endDate,
+        assessmentCreatedOn: assessment.createdOn
+      });
+      
+      // Parse the assessment creation date
+      const createdDate = parseDate(assessment.createdOn);
+      if (!createdDate) {
+        console.log('❌ Could not parse assessment date:', assessment.createdOn);
         matchesDateRange = false;
+      } else {
+        const createdDateOnly = new Date(createdDate.getFullYear(), createdDate.getMonth(), createdDate.getDate());
+        
+        // Check start date
+        if (dateRangeFilter.startDate) {
+          const startDate = new Date(dateRangeFilter.startDate + 'T00:00:00');
+          const startDateOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+          if (createdDateOnly < startDateOnly) {
+            console.log('❌ Assessment date is before start date');
+            matchesDateRange = false;
+          }
+        }
+        
+        // Check end date
+        if (dateRangeFilter.endDate && matchesDateRange) {
+          const endDate = new Date(dateRangeFilter.endDate + 'T23:59:59');
+          const endDateOnly = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+          if (createdDateOnly > endDateOnly) {
+            console.log('❌ Assessment date is after end date');
+            matchesDateRange = false;
+          }
+        }
+        
+        console.log('📊 Date comparison result:', {
+          assessment: assessment.id,
+          createdDate: createdDateOnly.toISOString().split('T')[0],
+          startDate: dateRangeFilter.startDate,
+          endDate: dateRangeFilter.endDate,
+          matches: matchesDateRange
+        });
       }
     }
 
@@ -492,16 +706,16 @@ export default function AssessmentDashboard() {
     if (filterColumn !== 'all' && filterValue !== 'all') {
       switch (filterColumn) {
         case 'assessmentId':
-          matchesFilter = assessment.id.toLowerCase().includes(filterValue.toLowerCase());
+          matchesFilter = (assessment.id || '').toLowerCase().includes(filterValue.toLowerCase());
           break;
         case 'caseId':
-          matchesFilter = assessment.caseId.toLowerCase().includes(filterValue.toLowerCase());
+          matchesFilter = (assessment.caseId || '').toLowerCase().includes(filterValue.toLowerCase());
           break;
         case 'assessmentType':
           matchesFilter = assessment.type === filterValue;
           break;
         case 'status':
-          matchesFilter = assessment.status.toLowerCase() === filterValue.toLowerCase();
+          matchesFilter = (assessment.status || '').toLowerCase() === filterValue.toLowerCase();
           break;
         case 'createdBy':
           matchesFilter = assessment.createdBy === filterValue;
@@ -535,10 +749,33 @@ export default function AssessmentDashboard() {
    
     return matchesSearch && matchesDateRange && matchesFilter;
   }).sort((a, b) => {
-    // Sort by creation date - newest first
-    const dateA = new Date(a.createdOn);
-    const dateB = new Date(b.createdOn);
-    return dateB.getTime() - dateA.getTime();
+    // Sort by creation timestamp - newest first (most reliable)
+    const timestampA = a.createdTimestamp || 0;
+    const timestampB = b.createdTimestamp || 0;
+    
+    // If timestamps are equal, fall back to date parsing
+    if (timestampB === timestampA) {
+      const dateA = parseDate(a.createdOn) || new Date(0);
+      const dateB = parseDate(b.createdOn) || new Date(0);
+      
+      // If dates are equal, fall back to ID comparison (newer IDs first)
+      if (dateB.getTime() === dateA.getTime()) {
+        return (b.id || '').localeCompare(a.id || '');
+      }
+      
+      return dateB.getTime() - dateA.getTime();
+    }
+    
+    return timestampB - timestampA;
+  });
+
+  // Debug: Log filtered results
+  console.log('🔍 Filtered assessments count:', filteredAssessments.length, 'out of', assessments.length);
+  console.log('📊 Current filters:', {
+    search: searchQuery,
+    dateRange: dateRangeFilter,
+    column: filterColumn,
+    value: filterValue
   });
  
   // Pagination calculations
@@ -867,12 +1104,16 @@ export default function AssessmentDashboard() {
                   <input
                     id="start-date"
                     type="date"
+                    placeholder="mm/dd/yyyy"
                     value={dateRangeFilter.startDate}
-                    onChange={(e) => setDateRangeFilter(prev => ({
-                      ...prev,
-                      startDate: e.target.value,
-                      enabled: e.target.value !== '' || prev.endDate !== ''
-                    }))}
+                    onChange={(e) => {
+                      const newStartDate = e.target.value;
+                      console.log('🗓️ Start date changed from', dateRangeFilter.startDate, 'to', newStartDate);
+                      setDateRangeFilter(prev => ({
+                        ...prev,
+                        startDate: newStartDate
+                      }));
+                    }}
                     className="date-input"
                   />
                 </div>
@@ -882,20 +1123,34 @@ export default function AssessmentDashboard() {
                   <input
                     id="end-date"
                     type="date"
+                    placeholder="mm/dd/yyyy"
                     value={dateRangeFilter.endDate}
-                    onChange={(e) => setDateRangeFilter(prev => ({
-                      ...prev,
-                      endDate: e.target.value,
-                      enabled: prev.startDate !== '' || e.target.value !== ''
-                    }))}
+                    onChange={(e) => {
+                      const newEndDate = e.target.value;
+                      console.log('🗓️ End date changed from', dateRangeFilter.endDate, 'to', newEndDate);
+                      setDateRangeFilter(prev => ({
+                        ...prev,
+                        endDate: newEndDate
+                      }));
+                    }}
                     className="date-input"
                   />
                 </div>
                 
-                {dateRangeFilter.startDate && dateRangeFilter.endDate && (
-                  <div className="date-range-info">
-                    Showing completed assessments from {new Date(dateRangeFilter.startDate).toLocaleDateString()} to {new Date(dateRangeFilter.endDate).toLocaleDateString()}
-                  </div>
+                {(dateRangeFilter.startDate || dateRangeFilter.endDate) && (
+                  <button 
+                    className="clear-date-filter"
+                    onClick={() => {
+                      console.log('Clearing date range filter');
+                      setDateRangeFilter({
+                        startDate: '',
+                        endDate: ''
+                      });
+                    }}
+                    title="Clear date range filter"
+                  >
+                    ✕
+                  </button>
                 )}
               </div>
             </div>
@@ -921,7 +1176,7 @@ export default function AssessmentDashboard() {
                             className="dropdown-search-input"
                           />
                         </div>
-                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>All Assessment IDs</div>
+                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>Select all</div>
                         {assessments.map(a => a.id).filter((id, index, self) => self.indexOf(id) === index)
                           .filter(id => id.toLowerCase().includes(dropdownSearch.toLowerCase()))
                           .map(id => (
@@ -946,7 +1201,7 @@ export default function AssessmentDashboard() {
                             className="dropdown-search-input"
                           />
                         </div>
-                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>All Case IDs</div>
+                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>Select all</div>
                         {assessments.map(a => a.caseId).filter((id, index, self) => self.indexOf(id) === index)
                           .filter(id => id.toLowerCase().includes(dropdownSearch.toLowerCase()))
                           .map(id => (
@@ -962,7 +1217,7 @@ export default function AssessmentDashboard() {
                     </div>
                     {activeDropdown === 'assessmentType' && (
                       <div className="column-dropdown" onClick={(e) => e.stopPropagation()}>
-                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>All Types</div>
+                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>Select all</div>
                         <div className="dropdown-option" onClick={() => handleFilterSelect('CANS')}>CANS</div>
                         <div className="dropdown-option" onClick={() => handleFilterSelect('F.A.R.E')}>F.A.R.E</div>
                         <div className="dropdown-option" onClick={() => handleFilterSelect('Residential')}>Residential</div>
@@ -976,7 +1231,7 @@ export default function AssessmentDashboard() {
                     </div>
                     {activeDropdown === 'status' && (
                       <div className="column-dropdown" onClick={(e) => e.stopPropagation()}>
-                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>All Statuses</div>
+                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>Select all</div>
                         <div className="dropdown-option" onClick={() => handleFilterSelect('completed')}>Completed</div>
                         <div className="dropdown-option" onClick={() => handleFilterSelect('in-progress')}>In Progress</div>
                       </div>
@@ -989,7 +1244,7 @@ export default function AssessmentDashboard() {
                     </div>
                     {activeDropdown === 'createdOn' && (
                       <div className="column-dropdown" onClick={(e) => e.stopPropagation()}>
-                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>All Dates</div>
+                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>Select all</div>
                         <div className="dropdown-option" onClick={() => handleFilterSelect('today')}>Today</div>
                         <div className="dropdown-option" onClick={() => handleFilterSelect('week')}>Last 7 Days</div>
                         <div className="dropdown-option" onClick={() => handleFilterSelect('month')}>Last 30 Days</div>
@@ -1012,7 +1267,7 @@ export default function AssessmentDashboard() {
                             className="dropdown-search-input"
                           />
                         </div>
-                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>All Users</div>
+                        <div className="dropdown-option" onClick={() => handleFilterSelect('all')}>Select all</div>
                         {uniqueCreatedBy.filter(user => user.toLowerCase().includes(dropdownSearch.toLowerCase())).map(user => (
                           <div key={user} className="dropdown-option" onClick={() => handleFilterSelect(user)}>{user}</div>
                         ))}
@@ -1032,6 +1287,7 @@ export default function AssessmentDashboard() {
                       </div>
                     )}
                   </th>
+                  <th style={{ minWidth: '200px' }}>Responses</th>
                 </tr>
               </thead>
               <tbody>
@@ -1040,11 +1296,11 @@ export default function AssessmentDashboard() {
                     <tr key={assessment.id}>
                       <td>
                         <a
-                          href={`${window.location.origin}${window.location.pathname}?data=${btoa(JSON.stringify(assessment))}#assessment/${assessment.type.toLowerCase().replace(/\./g, '').replace(/\s+/g, '')}/${assessment.id}`}
+                          href={`${window.location.origin}${window.location.pathname}?data=${btoa(JSON.stringify(assessment))}#assessment/${(assessment.type || 'unknown').toLowerCase().replace(/\./g, '').replace(/\s+/g, '')}/${assessment.id}`}
                           className="assessment-link"
                           data-assessment-id={assessment.id}
                           data-assessment-type={assessment.type}
-                          title={`${assessment.type} Assessment ${assessment.id} - Right-click to open in new tab/window`}
+                          title={`${assessment.type || 'Assessment'} Assessment ${assessment.id} - Right-click to open in new tab/window`}
                           onClick={(e) => {
                             // Save data immediately for all click types
                             const assessmentData = JSON.stringify(assessment);
@@ -1115,22 +1371,31 @@ export default function AssessmentDashboard() {
                           {assessment.id}
                         </a>
                       </td>
-                      <td>{assessment.caseId}</td>
-                      <td>{assessment.type}</td>
+                      <td>{assessment.caseId || 'N/A'}</td>
+                      <td>{assessment.type || 'Unknown'}</td>
                       <td>
                         <span className={`status-badge ${getStatusClass(assessment.status)}`}>
                           {getStatusIcon(assessment.status)}
-                          {assessment.status}
+                          {assessment.status || 'Unknown'}
                         </span>
                       </td>
-                      <td>{assessment.createdOn}</td>
+                      <td>{assessment.createdOn || 'N/A'}</td>
                       <td>{assessment.createdBy || 'N/A'}</td>
                       <td>{assessment.submittedOn || '-'}</td>
+                      <td style={{ fontSize: '12px', maxWidth: '200px' }}>
+                        {assessment.type === 'F.A.R.E' && assessment.yesNoSummary ? (
+                          <div style={{ color: '#374151', lineHeight: '1.4' }}>
+                            {assessment.yesNoSummary}
+                          </div>
+                        ) : (
+                          <span style={{ color: '#9CA3AF' }}>-</span>
+                        )}
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7">
+                    <td colSpan="8">
                       <div className="empty-state">
                         <div className="empty-state-content">
                           <div className="empty-state-icon">

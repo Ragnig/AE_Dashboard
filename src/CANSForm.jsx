@@ -26,6 +26,7 @@ const badgesPerPage = 15;
 
 /* -------------------- COMPONENT -------------------- */
 export default function CANSForm({ overview = demoOverview, sections = demoSections, onClose, onSave, draftData }) {
+  console.log('🚀 CANS Form mounted with draftData:', draftData);
   
   const d = new Date();
   const pad = (n) => String(n).padStart(2, "0");
@@ -85,17 +86,38 @@ export default function CANSForm({ overview = demoOverview, sections = demoSecti
   const [badgePageIndex, setBadgePageIndex] = useState(0);
 
   // Generate assessment ID immediately (or use from draftData)
-  const [assessmentId] = useState(() => draftData?.id || `CANS-${Date.now()}`);
+  const generateCANSId = () => {
+    const stored = localStorage.getItem('assessments');
+    const assessments = stored ? JSON.parse(stored) : [];
+    const cansAssessments = assessments.filter(a => a.type === 'CANS');
+    const maxId = cansAssessments.reduce((max, assessment) => {
+      const match = assessment.id.match(/CANS-(\d+)/);
+      if (match) {
+        const num = parseInt(match[1]);
+        return num > max ? num : max;
+      }
+      return max;
+    }, 0);
+    return `CANS-${String(maxId + 1).padStart(3, '0')}`;
+  };
+  
+  const [assessmentId] = useState(() => {
+    const id = draftData?.id || generateCANSId();
+    console.log('🔑 CANS Assessment ID generated:', id);
+    return id;
+  });
 
   useEffect(() => {
     // Add beforeunload event listener for conditional save/discard
     const handleBeforeUnload = (event) => {
+      console.log('🚨 CANS beforeunload triggered - hasAnsweredQuestion:', hasAnsweredQuestion);
       if (!hasAnsweredQuestion) {
         // User hasn't answered any questions, discard the form
         console.log('🗑️ CANS: Discarding form on unload - no questions answered');
         const assessments = JSON.parse(localStorage.getItem('assessments') || '[]');
         const filteredAssessments = assessments.filter(a => a.id !== assessmentId);
         localStorage.setItem('assessments', JSON.stringify(filteredAssessments));
+        console.log('🗑️ CANS: Assessment discarded, remaining assessments:', filteredAssessments.length);
         return;
       }
       
@@ -270,6 +292,9 @@ export default function CANSForm({ overview = demoOverview, sections = demoSecti
   const setAnswer = (rowId, patch) => {
     console.log('🔄 setAnswer called with rowId:', rowId, 'patch:', patch);
     
+    // Calculate the next answers object first
+    const nextAnswers = { ...answers, [rowId]: { ...(answers[rowId] || { score: null, description: "", unk: false, na: false }), ...patch } };
+    
     // Track that user has answered at least one question
     const wasFirstAnswer = !hasAnsweredQuestion;
     if (patch && (patch.score !== null || (patch.description && patch.description.trim() !== '') || patch.unk || patch.na)) {
@@ -296,7 +321,7 @@ export default function CANSForm({ overview = demoOverview, sections = demoSecti
               memberDob: "2002-12-25",
               memberRole: formData.memberRole || "Caregiver"
             },
-            answers: next,
+            answers: nextAnswers,
             autoSaved: true
           };
           
@@ -306,13 +331,7 @@ export default function CANSForm({ overview = demoOverview, sections = demoSecti
       }
     }
     
-    setAnswers((prev) => {
-      console.log('🔄 Previous answers:', prev);
-      const next = { ...prev, [rowId]: { ...(prev[rowId] || { score: null, description: "", unk: false, na: false }), ...patch } };
-      console.log('🔄 Next answers:', next);
-      
-      return next;
-    });
+    setAnswers(nextAnswers);
     setIsDirty(true);
   };
 
@@ -717,7 +736,8 @@ function formatSchemaJSON(overview, answers) {
   }, [answers]); // Changed dependency to answers instead of anyAnswered
 
   async function handleSaveDraft() {
-    if (!anyAnswered) {
+    console.log('🔄 CANS handleSaveDraft called - hasAnsweredQuestion:', hasAnsweredQuestion);
+    if (!hasAnsweredQuestion) {
       // No questions answered, just close the form without saving
       console.log('🗑️ CANS: Closing form - no questions answered');
       if (typeof onClose === "function") {
@@ -879,7 +899,7 @@ function formatSchemaJSON(overview, answers) {
   const sectionStartGlobal = sectionRanges.get(activeSectionId)?.start ?? 0;
   // eslint-disable-next-line no-unused-vars
   const submitDisabled = !canSubmit || isSaving || isSubmitted || isViewOnly;
-  const saveDisabled = !anyAnswered || isSaving || isSubmitted || isViewOnly;
+  const saveDisabled = !hasAnsweredQuestion || isSaving || isSubmitted || isViewOnly;
 
   // ShouldShowDescribe unchanged
   const shouldShowDescribe = (() => {
